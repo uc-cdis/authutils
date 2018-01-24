@@ -19,6 +19,7 @@ setup(
         'PyYAML==3.11',
         'sqlalchemy==0.9.9',
         'Werkzeug==0.12.2',
+        'xmltodict==0.9.2',
     ],
     dependency_links=[
         'git+https://git@github.com/uc-cdis/cdis_oauth2client.git@0.1.2#egg=cdis_oauth2client',
