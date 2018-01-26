@@ -8,6 +8,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'cdis_oauth2client',
+        'cdislogging',
         'cdiserrors',
         'cdispyutils',
         'gdcdatamodel',
@@ -23,6 +24,7 @@ setup(
     ],
     dependency_links=[
         'git+https://git@github.com/uc-cdis/cdis_oauth2client.git@0.1.2#egg=cdis_oauth2client',
+        'git+https://git@github.com/uc-cdis/cdislogging.git@master#egg=cdislogging',
         'git+https://git@github.com/uc-cdis/cdis-python-utils.git@0.2.2#egg=cdispyutils',
         'git+https://git@github.com/uc-cdis/cdiserrors.git@0.0.4#egg=cdiserrors',
         'git+https://git@github.com/NCI-GDC/gdcdatamodel.git@1.1.0#egg=gdcdatamodel',

@@ -8,6 +8,7 @@ import requests
 import re
 
 import xmltodict
+from cdislogging import get_logger
 from gdcdatamodel.models import Project
 from xml.parsers.expat import ExpatError
 from cdiserrors import (
@@ -36,7 +37,7 @@ class dbGaPXReferencer(object):
 
         self.db = db
         self.proxies = proxies
-        self.logger = logger or logging.getLogger("dbGapXReferencer")
+        self.logger = logger or get_logger("dbGapXReferencer")
         self.logger.info('Creating new dbGaP Cross Referencer')
 
     def request_telemetry_report(self, phsid):
