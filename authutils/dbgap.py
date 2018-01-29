@@ -24,7 +24,7 @@ class dbGaPXReferencer(object):
 
     #: The url from which to pull telemetry reports for project with given
     #: accession number (to be formatted in)
-    DEFAULT_URL = ('http://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/'
+    DEFAULT_URL = ('https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/'
                    'GetSampleStatus.cgi?study_id={phsid}&rettype=xml')
 
     def __init__(self, db, logger=None, proxies={}):

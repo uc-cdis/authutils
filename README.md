@@ -1,2 +1,8 @@
 # authutils
-auth utilities for gen3 microservices
+Utilities for auth to work with sheepdog
+
+Install
+---
+
+- setup.py has the packages required to use this library.
+- requirements.txt have the explicit versions of the libraries.
