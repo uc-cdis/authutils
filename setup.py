@@ -11,7 +11,7 @@ setup(
         'cdislogging',
         'cdiserrors',
         'cdispyutils',
-        'gdcdatamodel',
+        'datamodelutils',
         'userdatamodel',
         'Flask',
         'Flask-SQLAlchemy-Session',

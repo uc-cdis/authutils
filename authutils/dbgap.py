@@ -9,7 +9,7 @@ import re
 
 import xmltodict
 from cdislogging import get_logger
-from gdcdatamodel.models import Project
+from datamodelutils import models
 from xml.parsers.expat import ExpatError
 from cdiserrors import (
     InternalError,
@@ -125,7 +125,7 @@ class dbGaPXReferencer(object):
                          .format(program_name, project_code))
 
         with self.db.session_scope():
-            project = (self.db.nodes(Project)
+            project = (self.db.nodes(models.Project)
                        .props(code=project_code)
                        .path('programs')
                        .props(name=program_name)
