@@ -7,7 +7,7 @@ import sqlalchemy
 import userdatamodel
 from userdatamodel.user import AccessPrivilege
 
-from gdcdatamodel import models
+from datamodelutils import models
 from cdiserrors import (
     AuthError,
     InternalError,
