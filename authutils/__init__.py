@@ -1,5 +1,4 @@
-"""authutils
-
+"""
 Provides functions for handling user authentication and authorization.
 """
 
@@ -14,7 +13,6 @@ import flask
 from flask_sqlalchemy_session import current_session
 from userdatamodel.user import AccessPrivilege, HMACKeyPair, User
 
-import dbgap
 from authutils.auth_driver import AuthDriver
 from authutils.federated_user import FederatedUser
 from cdiserrors import (
