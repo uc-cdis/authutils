@@ -1,4 +1,7 @@
-class AuthError(Exception):
+from cdiserrors import AuthError as CDISAuthError
+
+
+class AuthError(CDISAuthError):
 
     pass
 
