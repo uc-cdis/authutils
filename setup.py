@@ -7,6 +7,7 @@ setup(
     license="Apache",
     packages=find_packages(),
     install_requires=[
+        "Authlib[crypto]==0.4.1",
         'cdislogging',
         'cdiserrors',
         'cdispyutils',
