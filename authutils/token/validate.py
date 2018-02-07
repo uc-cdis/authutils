@@ -14,6 +14,18 @@ import authutils.token.keys
 current_token = LocalProxy(lambda: getattr(flask.g, '_current_token', None))
 
 
+def set_current_token(token):
+    flask.g._current_token = token
+
+
+def store_session_token(token):
+    flask.session['_authutils_access_token'] = token
+
+
+def get_session_token():
+    return flask.session.get('_authutils_access_token')
+
+
 def _validate_purpose(claims, pur):
     """
     Check that the claims from a JWT have the expected purpose claim ``pur``.
@@ -179,7 +191,7 @@ def require_auth_header(aud, purpose='access'):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            flask.g._current_token = validate_request(aud=aud, purpose=purpose)
+            set_current_token(validate_request(aud=aud, purpose=purpose))
             return f(*args, **kwargs)
 
         return wrapper

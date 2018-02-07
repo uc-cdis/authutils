@@ -26,7 +26,7 @@ with an OAuth client instance from the ``authlib`` package as follows:
 import flask
 from flask import current_app
 
-from authutils.errors import AuthError
+import authutils.oauth2.client.authorize
 
 
 blueprint = flask.Blueprint('oauth', __name__)
@@ -38,11 +38,11 @@ def get_authorization_url():
     Provide a redirect to the authorization endpoint from the OP.
     """
     # This will be the value that was put in the ``client_kwargs`` in config.
-    callback_uri = current_app.oauth_client.session.callback_uri
+    redirect_uri = current_app.oauth_client.session.redirect_uri
     # Get the authorization URL and the random state; save the state to check
     # later, and return the URL.
     authorization_url, state = (
-        current_app.oauth_client.generate_authorize_redirect(callback_uri)
+        current_app.oauth_client.generate_authorize_redirect(redirect_uri)
     )
     flask.session['state'] = state
     return authorization_url
@@ -53,16 +53,7 @@ def do_authorize():
     """
     Send a token request to the OP.
     """
-    callback_uri = current_app.config['HOSTNAME']
-    try:
-        assert flask.request.args['state'] == flask.session.pop('state')
-    except (KeyError, AssertionError):
-        raise AuthError('state did not match across auth requests')
-    token = current_app.oauth_client.fetch_access_token(
-        callback_uri,
-        **flask.request.args
-    )
-    return token
+    authutils.oauth2.client.authorize.client_do_authorize()
 
 
 @blueprint.route('/logout', methods=['GET'])

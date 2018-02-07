@@ -14,7 +14,9 @@ from userdatamodel.user import AccessPrivilege, HMACKeyPair, User
 from authutils.auth_driver import AuthDriver
 from authutils.errors import AuthError
 from authutils.federated_user import FederatedUser
-from authutils.token import current_token
+from authutils.oauth2.client.authorize import client_do_authorize
+from authutils.token import get_session_token
+from authutils.token.validate import validate_jwt
 
 SERVICE = 'submission'
 roles = dict(
@@ -27,6 +29,7 @@ roles = dict(
     RELEASE='release',
     UPDATE='update',
 )
+
 
 def admin_auth():
     check_user_credential()
@@ -58,19 +61,12 @@ def authorize_for_project(*roles):
 
 
 def check_user_credential():
-    try:
-        #username = cdis_oauth2client.get_username()
-        # TODO
-        set_user_by_username(username)
-    except OAuth2Error as oauth2_error:
-        try:
-            verify_hmac(
-                flask.request, 'submission', get_secret_key_and_user
-            )
-        except HMAC4Error as hmac_error:
-            flask.current_app.logger.exception('Failed to verify OAuth')
-            flask.current_app.logger.exception('Failed to verify hmac')
-            raise AuthError(oauth2_error.message + '; ' + hmac_error.message)
+    token = get_session_token()
+    if not token:
+        client_do_authorize()
+        token = get_session_token()
+    claims = validate_jwt(token, aud={'openid'})
+    set_user_by_id(claims['sub'])
 
 
 def get_secret_key_and_user(access_key):
@@ -106,10 +102,6 @@ def set_user_by_username(username):
     if not user:
         raise AuthError("User doesn't exist.")
     flask.g.user = flask.g.get('user', FederatedUser(user=user))
-
-
-def set_user_from_current_token():
-    set_user_by_id(current_token['sub'])
 
 
 def require_auth():
