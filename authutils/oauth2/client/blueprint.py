@@ -54,6 +54,7 @@ def do_authorize():
     Send a token request to the OP.
     """
     authutils.oauth2.client.authorize.client_do_authorize()
+    return '', 204
 
 
 @blueprint.route('/logout', methods=['GET'])
