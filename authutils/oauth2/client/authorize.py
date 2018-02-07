@@ -1,3 +1,4 @@
+from authlib.client.errors import OAuthException
 from authlib.specs.rfc6749.errors import OAuth2Error
 import flask
 from flask import current_app
@@ -20,5 +21,5 @@ def client_do_authorize():
         )
         set_current_token(token)
         return token
-    except OAuth2Error as e:
+    except (OAuth2Error, OAuthException) as e:
         raise AuthError(str(e))
