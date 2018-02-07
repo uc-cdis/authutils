@@ -4,8 +4,6 @@ Provides functions for handling user authentication and authorization.
 
 import functools
 
-import cdis_oauth2client
-from cdis_oauth2client import OAuth2Error
 from cdispyutils.hmac4 import verify_hmac
 from cdispyutils.hmac4.hmac4_auth_utils import HMAC4Error
 from cryptography.fernet import Fernet
@@ -14,10 +12,9 @@ from flask_sqlalchemy_session import current_session
 from userdatamodel.user import AccessPrivilege, HMACKeyPair, User
 
 from authutils.auth_driver import AuthDriver
+from authutils.errors import AuthError
 from authutils.federated_user import FederatedUser
-from cdiserrors import (
-    AuthError,
-)
+from authutils.token import current_token
 
 SERVICE = 'submission'
 roles = dict(
@@ -62,8 +59,9 @@ def authorize_for_project(*roles):
 
 def check_user_credential():
     try:
-        username = cdis_oauth2client.get_username()
-        get_user(username)
+        #username = cdis_oauth2client.get_username()
+        # TODO
+        set_user_by_username(username)
     except OAuth2Error as oauth2_error:
         try:
             verify_hmac(
@@ -92,7 +90,14 @@ def get_secret_key_and_user(access_key):
     return key.decrypt(bytes(hmac_keypair.secret_key))
 
 
-def get_user(username):
+def set_user_by_id(user_id):
+    user = current_session.query(User).filter_by(id=user_id).first()
+    if not user:
+        raise AuthError('no user found with ID {}'.format(user_id))
+    flask.g.user = user
+
+
+def set_user_by_username(username):
     user = (
         current_session.query(User)
         .filter(User.username == username)
@@ -101,6 +106,10 @@ def get_user(username):
     if not user:
         raise AuthError("User doesn't exist.")
     flask.g.user = flask.g.get('user', FederatedUser(user=user))
+
+
+def set_user_from_current_token():
+    set_user_by_id(current_token['sub'])
 
 
 def require_auth():

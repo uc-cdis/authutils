@@ -100,7 +100,8 @@ def _validate_jwt(encoded_token, public_key, aud, iss):
     return token
 
 
-def validate_jwt(encoded_token, aud, purpose='access'):
+def validate_jwt(
+        encoded_token, aud, purpose='access', iss=None, public_key=None):
     """
     Validate a JWT and return the claims.
 
@@ -123,14 +124,15 @@ def validate_jwt(encoded_token, aud, purpose='access'):
             if auth header is missing, decoding fails, or the JWT fails to
             satisfy any expectation
     """
+    iss = iss or flask.current_app.config['USER_API']
+    if public_key is None:
+        token_headers = jwt.get_unverified_header(encoded_token)
+        public_key = authutils.token.keys.get_public_key_for_kid(
+            token_headers.get('kid'), attempt_refresh=True
+        )
     if not aud:
         raise ValueError('must provide at least one audience')
     aud = set(aud)
-    iss = flask.current_app.config['USER_API']
-    token_headers = jwt.get_unverified_header(encoded_token)
-    public_key = authutils.token.keys.get_public_key_for_kid(
-        token_headers.get('kid'), attempt_refresh=True
-    )
     claims = _validate_jwt(encoded_token, public_key, aud, iss)
     if purpose:
         _validate_purpose(claims, purpose)
