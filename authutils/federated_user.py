@@ -19,7 +19,7 @@ from cdiserrors import (
 
 class FederatedUser(object):
 
-    def __init__(self, hmac_keypair=None, user = None):
+    def __init__(self, hmac_keypair=None, user=None):
         self._phsids = {}
         if hmac_keypair is None:
             self.hmac_keypair = None

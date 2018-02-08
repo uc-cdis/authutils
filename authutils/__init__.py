@@ -90,7 +90,7 @@ def set_user_by_id(user_id):
     user = current_session.query(User).filter_by(id=user_id).first()
     if not user:
         raise AuthError('no user found with ID {}'.format(user_id))
-    flask.g.user = user
+    flask.g.user = FederatedUser(user=user)
 
 
 def set_user_by_username(username):

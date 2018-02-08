@@ -4,7 +4,7 @@ import flask
 from flask import current_app
 
 from authutils.errors import AuthError
-from authutils.token import set_current_token
+from authutils.token import set_current_token, store_session_token
 
 
 def client_do_authorize():
@@ -19,7 +19,7 @@ def client_do_authorize():
         token = current_app.oauth_client.fetch_access_token(
             redirect_uri, **flask.request.args.to_dict()
         )
-        set_current_token(token)
+        store_session_token(token['access_token'])
         return token
-    except (OAuth2Error, OAuthException) as e:
+    except (KeyError, OAuth2Error, OAuthException) as e:
         raise AuthError(str(e))
