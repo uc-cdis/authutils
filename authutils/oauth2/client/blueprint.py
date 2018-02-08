@@ -17,10 +17,12 @@ with an OAuth client instance from the ``authlib`` package as follows:
         access_token_url='https://auth.net/oauth/token',
         authorize_url='https://auth.net/oauth/authorize',
         client_kwargs={
-            'scope': 'data:user',
+            'scope': 'openid data user',
             'redirect_uri': 'https://service.net/authorize',
         },
     )
+
+(NOTE the scopes are space-separated.)
 """
 
 import flask
