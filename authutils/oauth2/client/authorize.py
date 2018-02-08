@@ -22,6 +22,6 @@ def client_do_authorize():
         store_session_token(token['access_token'])
         return token
     except KeyError as e:
-        raise AuthError('access_token missing from token response')
+        raise AuthError('error in token response: {}'.format(token))
     except (OAuth2Error, OAuthException) as e:
         raise AuthError(str(e))
