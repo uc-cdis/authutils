@@ -16,7 +16,6 @@ from authutils.token.keys import (
 )
 from authutils.token.validate import (
     _validate_jwt,
-    validate_jwt,
     require_auth_header,
 )
 
@@ -43,7 +42,9 @@ def test_invalid_signature_rejected(
     corresponding to the public key it is given.
     """
     with pytest.raises(jwt.DecodeError):
-        _validate_jwt(encoded_jwt, different_public_key, default_audiences, iss)
+        _validate_jwt(
+            encoded_jwt, different_public_key, default_audiences, iss
+        )
 
 
 def test_invalid_aud_rejected(encoded_jwt, public_key, iss):
@@ -120,16 +121,17 @@ def test_validate_request_jwt_bad_header(client, mock_get, encoded_jwt):
 def test_validate_request_jwt_incorrect_usage(
         app, client, auth_header, mock_get):
     """
-    Test that if a ``require_auth_header`` caller does not give it any audiences, a
-    JWTAudienceError is raised.
+    Test that if a ``require_auth_header`` caller does not give it any
+    audiences, a JWTAudienceError is raised.
     """
     mock_get()
 
     # This should raise a ValueError, since no audiences are provided.
-    @app.route('/test_incorrect_usage')
     @require_auth_header({}, 'access')
     def bad():
         return flask.jsonify({'foo': 'bar'})
+
+    app.add_url_rule('/test_incorrect_usage', 'bad', bad)
 
     with pytest.raises(ValueError):
         client.get('/test_incorrect_usage', headers=auth_header)

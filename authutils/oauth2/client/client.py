@@ -1,2 +1,4 @@
-# re-export from authlib
 from authlib.client import OAuthClient
+
+
+__all__ = ['OAuthClient']

@@ -143,7 +143,11 @@ def validate_jwt(
             if auth header is missing, decoding fails, or the JWT fails to
             satisfy any expectation
     """
-    iss = iss or flask.current_app.config.get('OIDC_ISSUER') or flask.current_app.config['USER_API']
+    iss = (
+        iss
+        or flask.current_app.config.get('OIDC_ISSUER')
+        or flask.current_app.config['USER_API']
+    )
     if public_key is None:
         token_headers = jwt.get_unverified_header(encoded_token)
         public_key = authutils.token.keys.get_public_key_for_kid(

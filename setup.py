@@ -17,7 +17,7 @@ setup(
         'Flask-SQLAlchemy-Session>=1.1,<2.0',
         'requests>=2.6.0,<3.0.0',
         'python-keystoneclient==1.8.1',
-        'PyYAML==3.11',
+        'PyYAML>=3.11,<4.0',
         'sqlalchemy==0.9.9',
         'Werkzeug==0.12.2',
         'xmltodict==0.9.2',
