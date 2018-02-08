@@ -23,7 +23,14 @@ def store_session_token(token):
 
 
 def get_session_token():
-    return flask.session.get('_authutils_access_token')
+    auth_header = flask.request.headers.get('Authorization')
+    token = None
+    if auth_header:
+        items = auth_header.split(' ')
+        if len(items) == 2 and items[0].lower() == 'bearer':
+            token = items[1]
+
+    return token or flask.session.get('_authutils_access_token')
 
 
 def _validate_purpose(claims, pur):
@@ -136,7 +143,7 @@ def validate_jwt(
             if auth header is missing, decoding fails, or the JWT fails to
             satisfy any expectation
     """
-    iss = iss or flask.current_app.config['OIDC_ISSUER'] or flask.current_app.config['USER_API']
+    iss = iss or flask.current_app.config.get('OIDC_ISSUER') or flask.current_app.config['USER_API']
     if public_key is None:
         token_headers = jwt.get_unverified_header(encoded_token)
         public_key = authutils.token.keys.get_public_key_for_kid(

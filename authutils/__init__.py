@@ -63,8 +63,7 @@ def authorize_for_project(*roles):
 def check_user_credential():
     token = get_session_token()
     if not token:
-        client_do_authorize()
-        token = get_session_token()
+        raise AuthError("No authentication is provided")
     claims = validate_jwt(token, aud={'openid'})
     set_user_by_id(claims['sub'])
 
