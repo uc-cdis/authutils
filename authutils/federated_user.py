@@ -9,7 +9,7 @@ import flask_sqlalchemy_session
 import userdatamodel
 from userdatamodel.user import AccessPrivilege, HMACKeyPair, User
 
-from gdcdatamodel import models
+from datamodelutils import models
 from cdiserrors import (
     AuthError,
     InternalError,
