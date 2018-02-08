@@ -63,6 +63,8 @@ def do_authorize():
 def logout_oauth():
     """
     Log out the user.
+
+    TODO: as is this doesn't do anything; could at least revoke user refresh
+    token
     """
-    # TODO
-    assert False
+    return '', 204
