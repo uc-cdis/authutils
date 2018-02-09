@@ -1,12 +1,9 @@
-"""authutils
-
+"""
 Provides functions for handling user authentication and authorization.
 """
 
 import functools
 
-import cdis_oauth2client
-from cdis_oauth2client import OAuth2Error
 from cdispyutils.hmac4 import verify_hmac
 from cdispyutils.hmac4.hmac4_auth_utils import HMAC4Error
 from cryptography.fernet import Fernet
@@ -14,12 +11,12 @@ import flask
 from flask_sqlalchemy_session import current_session
 from userdatamodel.user import AccessPrivilege, HMACKeyPair, User
 
-import dbgap
 from authutils.auth_driver import AuthDriver
+from authutils.errors import AuthError
 from authutils.federated_user import FederatedUser
-from cdiserrors import (
-    AuthError,
-)
+from authutils.oauth2.client.authorize import client_do_authorize
+from authutils.token import get_session_token
+from authutils.token.validate import validate_jwt
 
 SERVICE = 'submission'
 roles = dict(
@@ -32,6 +29,7 @@ roles = dict(
     RELEASE='release',
     UPDATE='update',
 )
+
 
 def admin_auth():
     check_user_credential()
@@ -63,18 +61,11 @@ def authorize_for_project(*roles):
 
 
 def check_user_credential():
-    try:
-        username = cdis_oauth2client.get_username()
-        get_user(username)
-    except OAuth2Error as oauth2_error:
-        try:
-            verify_hmac(
-                flask.request, 'submission', get_secret_key_and_user
-            )
-        except HMAC4Error as hmac_error:
-            flask.current_app.logger.exception('Failed to verify OAuth')
-            flask.current_app.logger.exception('Failed to verify hmac')
-            raise AuthError(oauth2_error.message + '; ' + hmac_error.message)
+    token = get_session_token()
+    if not token:
+        raise AuthError("No authentication is provided")
+    claims = validate_jwt(token, aud={'openid'})
+    set_user_by_id(claims['sub'])
 
 
 def get_secret_key_and_user(access_key):
@@ -94,7 +85,14 @@ def get_secret_key_and_user(access_key):
     return key.decrypt(bytes(hmac_keypair.secret_key))
 
 
-def get_user(username):
+def set_user_by_id(user_id):
+    user = current_session.query(User).filter_by(id=user_id).first()
+    if not user:
+        raise AuthError('no user found with ID {}'.format(user_id))
+    flask.g.user = FederatedUser(user=user)
+
+
+def set_user_by_username(username):
     user = (
         current_session.query(User)
         .filter(User.username == username)
