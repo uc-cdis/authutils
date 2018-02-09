@@ -3,7 +3,6 @@
 from collections import OrderedDict
 
 import flask
-import jwt
 import pytest
 import requests
 
@@ -41,7 +40,7 @@ def test_invalid_signature_rejected(
     Test that ``validate_jwt`` rejects JWTs signed with a private key not
     corresponding to the public key it is given.
     """
-    with pytest.raises(jwt.DecodeError):
+    with pytest.raises(JWTError):
         _validate_jwt(
             encoded_jwt, different_public_key, default_audiences, iss
         )
