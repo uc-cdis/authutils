@@ -25,6 +25,9 @@ with an OAuth client instance from the ``authlib`` package as follows:
 (NOTE the scopes are space-separated.)
 """
 
+from urlparse import urljoin
+
+from cdiserrors import APIError
 import flask
 from flask import current_app
 
@@ -64,7 +67,13 @@ def logout_oauth():
     """
     Log out the user.
 
-    TODO: as is this doesn't do anything; could at least revoke user refresh
-    token
+    To accomplish this, just revoke the refresh token if provided.
     """
+    url = urljoin(current_app.config.get('USER_API'), '/oauth2/revoke')
+    token = flask.request.form.get('token')
+    try:
+        current_app.oauth_client.session.revoke_token(url, token)
+    except APIError as e:
+        msg = 'could not log out, failed to revoke token: {}'.format(e.message)
+        return msg, 400
     return '', 204
