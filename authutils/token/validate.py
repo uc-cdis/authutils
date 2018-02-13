@@ -4,7 +4,12 @@ import flask
 import jwt
 from werkzeug.local import LocalProxy
 
-from authutils.errors import JWTError, JWTAudienceError, JWTPurposeError
+from authutils.errors import (
+    JWTError,
+    JWTAudienceError,
+    JWTExpiredError,
+    JWTPurposeError,
+)
 import authutils.token.keys
 
 
@@ -98,6 +103,8 @@ def _validate_jwt(encoded_token, public_key, aud, iss):
         )
     except jwt.InvalidAudienceError as e:
         raise JWTAudienceError(e)
+    except jwt.ExpiredSignatureError as e:
+        raise JWTExpiredError(e)
     except jwt.InvalidTokenError as e:
         raise JWTError(e)
 
