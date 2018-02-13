@@ -130,6 +130,15 @@ def encoded_jwt(claims, private_key):
 
 
 @pytest.fixture(scope='session')
+def encoded_jwt_expired(claims, private_key):
+    claims_expired = claims.copy()
+    # Move issued and expiration times into the past.
+    claims_expired['iat'] -= 100000
+    claims_expired['exp'] -= 100000
+    return jwt.encode(claims_expired, key=private_key, algorithm='RS256')
+
+
+@pytest.fixture(scope='session')
 def auth_header(encoded_jwt):
     """
     Return an authorization header containing the example JWT.

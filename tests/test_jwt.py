@@ -9,6 +9,7 @@ import requests
 from authutils.errors import (
     JWTError,
     JWTAudienceError,
+    JWTExpiredError,
 )
 from authutils.token.keys import (
     get_public_key_for_kid,
@@ -32,6 +33,12 @@ def test_valid_signature(
     )
     assert decoded_token
     assert decoded_token == claims
+
+
+def test_expired_token_rejected(
+        encoded_jwt_expired, public_key, default_audiences, iss):
+    with pytest.raises(JWTExpiredError):
+        _validate_jwt(encoded_jwt_expired, public_key, default_audiences, iss)
 
 
 def test_invalid_signature_rejected(
