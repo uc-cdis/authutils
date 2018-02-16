@@ -25,6 +25,7 @@ from collections import OrderedDict
 import json
 
 import flask
+import jwt
 import requests
 
 
@@ -92,7 +93,7 @@ def refresh_jwt_public_keys(user_api=None):
     )
 
 
-def get_public_key(iss=None, kid=None, attempt_refresh=True):
+def get_public_key(kid, iss=None, attempt_refresh=True):
     """
     Given a key id ``kid``, get the public key from the flask app belonging to
     this key id. The key id is allowed to be None, in which case, use the the
@@ -141,11 +142,26 @@ def get_public_key(iss=None, kid=None, attempt_refresh=True):
     if iss not in flask.current_app.jwt_public_keys:
         raise JWTError('issuer not found: {}'.format(iss))
     iss_public_keys = flask.current_app.jwt_public_keys[iss]
-    if kid:
-        try:
-            return iss_public_keys[kid]
-        except KeyError:
-            raise JWTError('no key exists with given key id: {}'.format(kid))
-    else:
-        # Grab the key from the first in the list of keys for the issuer.
-        return iss_public_keys.values()[0]
+    try:
+        return iss_public_keys[kid]
+    except KeyError:
+        raise JWTError('no key exists with given key id: {}'.format(kid))
+
+
+def get_public_key_for_token(encoded_token, attempt_refresh=True):
+    """
+    Attempt to look up the public key which should be used to verify the token.
+
+    Really just a thin wrapper around ``get_public_key`` which grabs the
+    ``kid`` from the token headers and the ``iss`` from the token claims.
+
+    Args:
+        encoded_token (str): encoded JWT
+        attempt_refresh (bool): whether to refresh public keys
+
+    Return:
+        str: public RSA key for token verification
+    """
+    kid = jwt.get_unverified_header(encoded_token).get('kid')
+    iss = jwt.decode(encoded_token, verify=False).get('iss')
+    return get_public_key(kid, iss=iss, attempt_refresh=attempt_refresh)
