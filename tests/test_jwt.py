@@ -11,9 +11,7 @@ from authutils.errors import (
     JWTAudienceError,
     JWTExpiredError,
 )
-from authutils.token.keys import (
-    get_public_key_for_kid,
-)
+from authutils.token.keys import get_public_key
 from authutils.token.validate import (
     _validate_jwt,
     require_auth_header,
@@ -79,8 +77,11 @@ def test_get_public_key(app, example_keys_response, mock_get):
     """
     mock_get()
     test_kid, expected_key = example_keys_response['keys'][0]
-    expected_jwt_public_keys_dict = OrderedDict(example_keys_response['keys'])
-    key = get_public_key_for_kid(test_kid)
+    iss = app.config['USER_API']
+    expected_jwt_public_keys_dict = {
+        iss: OrderedDict(example_keys_response['keys'])
+    }
+    key = get_public_key(kid=test_kid)
     requests.get.assert_called_once()
     assert key
     assert key == expected_key
@@ -94,7 +95,7 @@ def test_get_nonexistent_public_key_fails(app, mock_get):
     """
     mock_get()
     with pytest.raises(JWTError):
-        get_public_key_for_kid('nonsense')
+        get_public_key('nonsense')
 
 
 def test_validate_request_jwt(client, auth_header, mock_get):

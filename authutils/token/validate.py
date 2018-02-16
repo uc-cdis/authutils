@@ -63,7 +63,7 @@ def _validate_purpose(claims, pur):
         )
 
 
-def _validate_jwt(encoded_token, public_key, aud, iss):
+def _validate_jwt(encoded_token, public_key, aud, issuers):
     """
     Validate the encoded JWT ``encoded_token``, which must satisfy the
     audiences ``aud``.
@@ -87,6 +87,12 @@ def _validate_jwt(encoded_token, public_key, aud, iss):
     Raises:
         JWTValidationError: if any step of the validation fails
     """
+    # Typecheck arguments and convert as necessary.
+    if isinstance(aud, str):
+        aud = {aud}
+    if isinstance(issuers, str):
+        issuers = {issuers}
+
     # To satisfy PyJWT, since the token will contain an aud field, decode has
     # to be passed one of the audiences to check here (so PyJWT doesn't raise
     # an InvalidAudienceError). Per the JWT specification, if the token
@@ -113,8 +119,8 @@ def _validate_jwt(encoded_token, public_key, aud, iss):
 
     # iss
     # Check that the issuer of the token has the expected hostname.
-    if token['iss'] != iss:
-        msg = 'invalid issuer {}; expected {}'.format(token['iss'], iss)
+    if token['iss'] not in issuers:
+        msg = 'invalid issuer {}; expected: {}'.format(token['iss'], issuers)
         raise JWTError(msg)
 
     # aud
@@ -129,7 +135,7 @@ def _validate_jwt(encoded_token, public_key, aud, iss):
 
 
 def validate_jwt(
-        encoded_token, aud, purpose='access', iss=None, public_key=None):
+        encoded_token, aud, purpose='access', issuers=None, public_key=None):
     """
     Validate a JWT and return the claims.
 
@@ -141,6 +147,7 @@ def validate_jwt(
         purpose (Optional[str]):
             which purpose the token is supposed to be used for (access,
             refresh, or id)
+        issuers (Iterable[str]): list of allowed token issuers
         public_key (Optional[str]): public key to vaidate JWT with
 
     Return:
@@ -152,20 +159,22 @@ def validate_jwt(
             if auth header is missing, decoding fails, or the JWT fails to
             satisfy any expectation
     """
-    iss = (
-        iss
-        or flask.current_app.config.get('OIDC_ISSUER')
-        or flask.current_app.config['USER_API']
-    )
+    if not issuers:
+        issuers = []
+        issuers.append(
+            flask.current_app.config.get('OIDC_ISSUER')
+            or flask.current_app.config['USER_API']
+        )
     if public_key is None:
         token_headers = jwt.get_unverified_header(encoded_token)
-        public_key = authutils.token.keys.get_public_key_for_kid(
-            token_headers.get('kid'), attempt_refresh=True
+        token_iss = jwt.decode(encoded_token, verify=False).get('iss')
+        public_key = authutils.token.keys.get_public_key(
+            token_iss, token_headers.get('kid'), attempt_refresh=True
         )
     if not aud:
         raise ValueError('must provide at least one audience')
     aud = set(aud)
-    claims = _validate_jwt(encoded_token, public_key, aud, iss)
+    claims = _validate_jwt(encoded_token, public_key, aud, issuers)
     if purpose:
         _validate_purpose(claims, purpose)
     return claims

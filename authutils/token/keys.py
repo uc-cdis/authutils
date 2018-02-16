@@ -1,3 +1,26 @@
+"""
+Define functions for updating the public keys associated with certain token
+issuers and retrieving the public key which can be used to verify a given JWT.
+
+The public keys should be stored on the flask app in a `jwt_public_keys`
+attribute, which will be a dictionary mapping issuer URLs (`iss` in a JWT) to
+ordered dictionaries mapping key IDs to public key strings.
+
+For example:
+
+.. code-block:: python
+
+    flask.current_app.jwt_public_keys == {
+        'http://some-gen3-stack.net/user': OrderedDict([
+            'key-01': '-----BEGIN PUBLIC KEY-----...',
+            'key-02': '-----BEGIN PUBLIC KEY-----...',
+        ]),
+        'http://different-gen3-site.org/user': OrderedDict([
+            'key-01': '-----BEGIN PUBLIC KEY-----...',
+        ]),
+    }
+"""
+
 from collections import OrderedDict
 import json
 
@@ -48,19 +71,28 @@ def refresh_jwt_public_keys(user_api=None):
     Raises:
         ValueError: if user_api is not provided or set in app config
     """
+    # First, make sure the app has a ``jwt_public_keys`` attribute set up.
+    missing_public_keys = (
+        not hasattr(flask.current_app, 'jwt_public_keys')
+        or not flask.current_app.jwt_public_keys
+    )
+    if missing_public_keys:
+        flask.current_app.jwt_public_keys = {}
     user_api = user_api or flask.current_app.config.get('USER_API')
     if not user_api:
-        raise ValueError('no URL provided for user API')
+        raise ValueError('no URL(s) provided for user API')
     path = '/'.join(path.strip('/') for path in [user_api, 'jwt', 'keys'])
     jwt_public_keys = requests.get(path).json()['keys']
     flask.current_app.logger.info(
         'refreshing public keys; updated to:\n'
         + json.dumps(jwt_public_keys, indent=4)
     )
-    flask.current_app.jwt_public_keys = OrderedDict(jwt_public_keys)
+    flask.current_app.jwt_public_keys.update(
+        {user_api: OrderedDict(jwt_public_keys)}
+    )
 
 
-def get_public_key_for_kid(kid, attempt_refresh=True):
+def get_public_key(iss=None, kid=None, attempt_refresh=True):
     """
     Given a key id ``kid``, get the public key from the flask app belonging to
     this key id. The key id is allowed to be None, in which case, use the the
@@ -95,17 +127,25 @@ def get_public_key_for_kid(kid, attempt_refresh=True):
         JWTValidationError:
             if the key id is provided and public key with that key id is found
     """
+    iss = (
+        iss
+        or flask.current_app.config.get('OIDC_ISSUER')
+        or flask.current_app.config['USER_API']
+    )
     need_refresh = (
         not hasattr(flask.current_app, 'jwt_public_keys')
         or (kid and kid not in flask.current_app.jwt_public_keys)
     )
     if need_refresh and attempt_refresh:
         refresh_jwt_public_keys()
+    if iss not in flask.current_app.jwt_public_keys:
+        raise JWTError('issuer not found: {}'.format(iss))
+    iss_public_keys = flask.current_app.jwt_public_keys[iss]
     if kid:
         try:
-            return flask.current_app.jwt_public_keys[kid]
+            return iss_public_keys[kid]
         except KeyError:
             raise JWTError('no key exists with given key id: {}'.format(kid))
     else:
-        # Grab the key from the first in the list of keys.
-        return flask.current_app.jwt_public_keys.items()[0][1]
+        # Grab the key from the first in the list of keys for the issuer.
+        return iss_public_keys.values()[0]
