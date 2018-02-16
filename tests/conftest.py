@@ -70,12 +70,27 @@ def claims(default_audiences, iss):
 
 
 @pytest.fixture(scope='session')
-def example_keys_response(public_key, different_public_key):
+def default_kid():
+    return 'key-01'
+
+
+@pytest.fixture(scope='session')
+def token_headers(default_kid):
+    return {'kid': default_kid}
+
+
+@pytest.fixture(scope='session')
+def example_keys_response(default_kid, public_key, different_public_key):
     """
     Return an example response JSON returned from the ``/jwt/keys`` endpoint in
     fence.
     """
-    return {"keys": [["key-01", public_key], ["key-02", different_public_key]]}
+    return {
+        'keys': [
+            [default_kid, public_key],
+            ['key-02', different_public_key],
+        ]
+    }
 
 
 @pytest.fixture(scope='session')
@@ -114,7 +129,7 @@ def private_key():
 
 
 @pytest.fixture(scope='session')
-def encoded_jwt(claims, private_key):
+def encoded_jwt(claims, token_headers, private_key):
     """
     Return an example JWT containing the claims and encoded with the private
     key.
@@ -126,16 +141,23 @@ def encoded_jwt(claims, private_key):
     Return:
         str: JWT containing claims encoded with private key
     """
-    return jwt.encode(claims, key=private_key, algorithm='RS256')
+    return jwt.encode(
+        claims, headers=token_headers, key=private_key, algorithm='RS256'
+    )
 
 
 @pytest.fixture(scope='session')
-def encoded_jwt_expired(claims, private_key):
+def encoded_jwt_expired(claims, token_headers, private_key):
     claims_expired = claims.copy()
     # Move issued and expiration times into the past.
     claims_expired['iat'] -= 100000
     claims_expired['exp'] -= 100000
-    return jwt.encode(claims_expired, key=private_key, algorithm='RS256')
+    return jwt.encode(
+        claims_expired,
+        headers=token_headers,
+        key=private_key,
+        algorithm='RS256',
+    )
 
 
 @pytest.fixture(scope='session')
