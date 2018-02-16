@@ -137,7 +137,7 @@ def get_public_key(iss=None, kid=None, attempt_refresh=True):
         or (kid and kid not in flask.current_app.jwt_public_keys)
     )
     if need_refresh and attempt_refresh:
-        refresh_jwt_public_keys()
+        refresh_jwt_public_keys(iss)
     if iss not in flask.current_app.jwt_public_keys:
         raise JWTError('issuer not found: {}'.format(iss))
     iss_public_keys = flask.current_app.jwt_public_keys[iss]
