@@ -10,7 +10,7 @@ from authutils.errors import (
     JWTExpiredError,
     JWTPurposeError,
 )
-import authutils.token.keys
+from authutils.token.keys import get_public_key_for_token
 
 
 #: Proxy for the current token, which gets assigned to in
@@ -85,13 +85,14 @@ def _validate_jwt(encoded_token, public_key, aud, issuers):
         dict: the decoded and validated JWT
 
     Raises:
+        ValueError: if receiving an incorrectly-typed argument
         JWTValidationError: if any step of the validation fails
     """
-    # Typecheck arguments and convert as necessary.
-    if isinstance(aud, str):
-        aud = {aud}
-    if isinstance(issuers, str):
-        issuers = {issuers}
+    # Typecheck arguments.
+    if not isinstance(aud, set) and not isinstance(aud, list):
+        raise ValueError('aud must be set or list')
+    if not isinstance(issuers, set) and not isinstance(issuers, list):
+        raise ValueError('issuers must be set or list')
 
     # To satisfy PyJWT, since the token will contain an aud field, decode has
     # to be passed one of the audiences to check here (so PyJWT doesn't raise
@@ -166,11 +167,7 @@ def validate_jwt(
             or flask.current_app.config['USER_API']
         )
     if public_key is None:
-        token_headers = jwt.get_unverified_header(encoded_token)
-        token_iss = jwt.decode(encoded_token, verify=False).get('iss')
-        public_key = authutils.token.keys.get_public_key(
-            token_iss, token_headers.get('kid'), attempt_refresh=True
-        )
+        public_key = get_public_key_for_token(encoded_token)
     if not aud:
         raise ValueError('must provide at least one audience')
     aud = set(aud)
