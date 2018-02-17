@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="authutils",
-    version='0.0.1',
+    version='2.0.0',
     description="Gen3 auth utility functions.",
     license="Apache",
     packages=find_packages(),

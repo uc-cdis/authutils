@@ -11,9 +11,7 @@ from authutils.errors import (
     JWTAudienceError,
     JWTExpiredError,
 )
-from authutils.token.keys import (
-    get_public_key_for_kid,
-)
+from authutils.token.keys import get_public_key
 from authutils.token.validate import (
     _validate_jwt,
     require_auth_header,
@@ -29,7 +27,7 @@ def test_valid_signature(
     the fence README.
     """
     decoded_token = _validate_jwt(
-        encoded_jwt, public_key, default_audiences, iss
+        encoded_jwt, public_key, default_audiences, [iss]
     )
     assert decoded_token
     assert decoded_token == claims
@@ -38,7 +36,9 @@ def test_valid_signature(
 def test_expired_token_rejected(
         encoded_jwt_expired, public_key, default_audiences, iss):
     with pytest.raises(JWTExpiredError):
-        _validate_jwt(encoded_jwt_expired, public_key, default_audiences, iss)
+        _validate_jwt(
+            encoded_jwt_expired, public_key, default_audiences, [iss]
+        )
 
 
 def test_invalid_signature_rejected(
@@ -49,7 +49,7 @@ def test_invalid_signature_rejected(
     """
     with pytest.raises(JWTError):
         _validate_jwt(
-            encoded_jwt, different_public_key, default_audiences, iss
+            encoded_jwt, different_public_key, default_audiences, [iss]
         )
 
 
@@ -59,7 +59,7 @@ def test_invalid_aud_rejected(encoded_jwt, public_key, iss):
     appear in the token, a ``JWTAudienceError`` is raised.
     """
     with pytest.raises(JWTAudienceError):
-        _validate_jwt(encoded_jwt, public_key, {'not-in-aud'}, iss)
+        _validate_jwt(encoded_jwt, public_key, {'not-in-aud'}, [iss])
 
 
 def test_invalid_iss_rejected(encoded_jwt, public_key, iss):
@@ -69,7 +69,7 @@ def test_invalid_iss_rejected(encoded_jwt, public_key, iss):
     """
     wrong_iss = iss + 'garbage'
     with pytest.raises(JWTError):
-        _validate_jwt(encoded_jwt, public_key, {'not-in-aud'}, wrong_iss)
+        _validate_jwt(encoded_jwt, public_key, {'not-in-aud'}, [wrong_iss])
 
 
 def test_get_public_key(app, example_keys_response, mock_get):
@@ -79,8 +79,11 @@ def test_get_public_key(app, example_keys_response, mock_get):
     """
     mock_get()
     test_kid, expected_key = example_keys_response['keys'][0]
-    expected_jwt_public_keys_dict = OrderedDict(example_keys_response['keys'])
-    key = get_public_key_for_kid(test_kid)
+    iss = app.config['USER_API']
+    expected_jwt_public_keys_dict = {
+        iss: OrderedDict(example_keys_response['keys'])
+    }
+    key = get_public_key(kid=test_kid)
     requests.get.assert_called_once()
     assert key
     assert key == expected_key
@@ -94,7 +97,7 @@ def test_get_nonexistent_public_key_fails(app, mock_get):
     """
     mock_get()
     with pytest.raises(JWTError):
-        get_public_key_for_kid('nonsense')
+        get_public_key(kid='nonsense')
 
 
 def test_validate_request_jwt(client, auth_header, mock_get):
