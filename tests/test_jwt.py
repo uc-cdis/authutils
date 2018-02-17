@@ -10,6 +10,12 @@ from authutils.errors import (
     JWTError,
     JWTAudienceError,
 )
+from authutils.testing.fixtures import (
+    _hazmat_rsa_private_key,
+    _hazmat_rsa_private_key_2,
+    rsa_public_key,
+    rsa_public_key_2,
+)
 from authutils.token.keys import (
     get_public_key_for_kid,
 )
@@ -22,47 +28,47 @@ from tests.utils import TEST_RESPONSE_JSON
 
 
 def test_valid_signature(
-        claims, encoded_jwt, public_key, default_audiences, iss):
+        claims, encoded_jwt, rsa_public_key, default_audiences, iss):
     """
     Do a basic test of the expected functionality with the sample payload in
     the fence README.
     """
     decoded_token = _validate_jwt(
-        encoded_jwt, public_key, default_audiences, iss
+        encoded_jwt, rsa_public_key, default_audiences, iss
     )
     assert decoded_token
     assert decoded_token == claims
 
 
 def test_invalid_signature_rejected(
-        encoded_jwt, different_public_key, default_audiences, iss):
+        encoded_jwt, rsa_public_key_2, default_audiences, iss):
     """
     Test that ``validate_jwt`` rejects JWTs signed with a private key not
     corresponding to the public key it is given.
     """
     with pytest.raises(JWTError):
         _validate_jwt(
-            encoded_jwt, different_public_key, default_audiences, iss
+            encoded_jwt, rsa_public_key_2, default_audiences, iss
         )
 
 
-def test_invalid_aud_rejected(encoded_jwt, public_key, iss):
+def test_invalid_aud_rejected(encoded_jwt, rsa_public_key, iss):
     """
     Test that if ``validate_jwt`` is passed values for ``aud`` which do not
     appear in the token, a ``JWTAudienceError`` is raised.
     """
     with pytest.raises(JWTAudienceError):
-        _validate_jwt(encoded_jwt, public_key, {'not-in-aud'}, iss)
+        _validate_jwt(encoded_jwt, rsa_public_key, {'not-in-aud'}, iss)
 
 
-def test_invalid_iss_rejected(encoded_jwt, public_key, iss):
+def test_invalid_iss_rejected(encoded_jwt, rsa_public_key, iss):
     """
     Test that if ``validate_jwt`` receives a token whose value for ``iss``
     does not match the expected value, a ``JWTValidationError`` is raised.
     """
     wrong_iss = iss + 'garbage'
     with pytest.raises(JWTError):
-        _validate_jwt(encoded_jwt, public_key, {'not-in-aud'}, wrong_iss)
+        _validate_jwt(encoded_jwt, rsa_public_key, {'not-in-aud'}, wrong_iss)
 
 
 def test_get_public_key(app, example_keys_response, mock_get):

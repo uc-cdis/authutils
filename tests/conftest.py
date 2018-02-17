@@ -13,6 +13,13 @@ import mock
 import pytest
 import requests
 
+from authutils.testing.fixtures import (
+    _hazmat_rsa_private_key,
+    _hazmat_rsa_private_key_2,
+    rsa_private_key,
+    rsa_public_key,
+    rsa_public_key_2,
+)
 from authutils.token.validate import require_auth_header
 
 from tests.utils import TEST_RESPONSE_JSON
@@ -70,63 +77,28 @@ def claims(default_audiences, iss):
 
 
 @pytest.fixture(scope='session')
-def example_keys_response(public_key, different_public_key):
+def example_keys_response(rsa_public_key, rsa_public_key_2):
     """
     Return an example response JSON returned from the ``/jwt/keys`` endpoint in
     fence.
     """
-    return {"keys": [["key-01", public_key], ["key-02", different_public_key]]}
+    return {"keys": [["key-01", rsa_public_key], ["key-02", rsa_public_key_2]]}
 
 
 @pytest.fixture(scope='session')
-def public_key():
-    """
-    Return a public key for testing.
-    """
-    os.path.dirname(os.path.realpath(__file__))
-    here = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(here, 'test_public_key.pem')) as f:
-        return f.read()
-
-
-@pytest.fixture(scope='session')
-def different_public_key():
-    """
-    Return a public key for testing that doesn't form a correct keypair with
-    ``private_key``.
-    """
-    os.path.dirname(os.path.realpath(__file__))
-    here = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(here, 'test_public_key_2.pem')) as f:
-        return f.read()
-
-
-@pytest.fixture(scope='session')
-def private_key():
-    """
-    Return a private key for testing. (Use only a private key that is
-    specifically set aside for testing, and never actually used for auth.)
-    """
-    os.path.dirname(os.path.realpath(__file__))
-    here = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(here, 'test_private_key.pem')) as f:
-        return f.read()
-
-
-@pytest.fixture(scope='session')
-def encoded_jwt(claims, private_key):
+def encoded_jwt(claims, rsa_private_key):
     """
     Return an example JWT containing the claims and encoded with the private
     key.
 
     Args:
         claims (dict): fixture
-        private_key (str): fixture
+        rsa_private_key (str): fixture
 
     Return:
         str: JWT containing claims encoded with private key
     """
-    return jwt.encode(claims, key=private_key, algorithm='RS256')
+    return jwt.encode(claims, key=rsa_private_key, algorithm='RS256')
 
 
 @pytest.fixture(scope='session')
