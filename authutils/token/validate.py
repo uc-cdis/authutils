@@ -136,7 +136,8 @@ def _validate_jwt(encoded_token, public_key, aud, issuers):
 
 
 def validate_jwt(
-        encoded_token, aud, purpose='access', issuers=None, public_key=None):
+        encoded_token, aud, purpose='access', issuers=None, public_key=None,
+        attempt_refresh=True):
     """
     Validate a JWT and return the claims.
 
@@ -167,7 +168,10 @@ def validate_jwt(
             or flask.current_app.config['USER_API']
         )
     if public_key is None:
-        public_key = get_public_key_for_token(encoded_token)
+        public_key = get_public_key_for_token(
+            encoded_token,
+            attempt_refresh=attempt_refresh
+        )
     if not aud:
         raise ValueError('must provide at least one audience')
     aud = set(aud)
