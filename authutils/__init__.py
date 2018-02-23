@@ -4,12 +4,10 @@ Provides functions for handling user authentication and authorization.
 
 import functools
 
-from cdispyutils.hmac4 import verify_hmac
-from cdispyutils.hmac4.hmac4_auth_utils import HMAC4Error
 from cryptography.fernet import Fernet
 import flask
 from flask_sqlalchemy_session import current_session
-from userdatamodel.user import AccessPrivilege, HMACKeyPair, User
+from userdatamodel.user import HMACKeyPair, User
 
 from authutils.auth_driver import AuthDriver
 from authutils.errors import AuthError
