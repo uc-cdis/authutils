@@ -11,6 +11,11 @@ class JWTError(AuthError):
     pass
 
 
+class JWTExpiredError(AuthError):
+
+    pass
+
+
 class JWTPurposeError(JWTError):
 
     pass
