@@ -3,7 +3,6 @@
 Defines functionality to check case existence in dbGaP.
 """
 
-import logging
 import requests
 import re
 

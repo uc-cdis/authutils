@@ -7,7 +7,7 @@ import json
 import flask
 import flask_sqlalchemy_session
 import userdatamodel
-from userdatamodel.user import AccessPrivilege, HMACKeyPair, User
+from userdatamodel.user import AccessPrivilege
 
 from datamodelutils import models
 from cdiserrors import (
