@@ -29,7 +29,7 @@ import jwt
 import requests
 
 
-from authutils.errors import JWTError
+from authutils.errors import JWTError, JWTIssuerError
 
 
 def refresh_jwt_public_keys(user_api=None):
@@ -83,7 +83,20 @@ def refresh_jwt_public_keys(user_api=None):
     if not user_api:
         raise ValueError('no URL(s) provided for user API')
     path = '/'.join(path.strip('/') for path in [user_api, 'jwt', 'keys'])
-    jwt_public_keys = requests.get(path).json()['keys']
+    r = requests.get(path)
+    if r.status_code != 200:
+        raise JWTIssuerError(
+            "Fail to reach token issuer {}: {}".format(path, r.text))
+    else:
+        try:
+            data = r.json()
+        except ValueError as e:
+            raise JWTIssuerError(
+                "Fail to get public key from token issuer {}".format(e))
+        jwt_public_keys = data.get('keys')
+        if not jwt_public_keys:
+            raise JWTIssuerError(
+                "Fail to get public key from token issuer {}".format(data))
     flask.current_app.logger.info(
         'refreshing public keys; updated to:\n'
         + json.dumps(jwt_public_keys, indent=4)
