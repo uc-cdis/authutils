@@ -201,12 +201,15 @@ def validate_request(aud, purpose='access'):
     return validate_jwt(encoded_token, aud, purpose)
 
 
+def get_auth_token_from_request(aud, purpose='access'):
+    set_current_token(validate_request(aud=aud, purpose=purpose))
+
+
 def require_auth_header(aud, purpose='access'):
     """
     Return a decorator which adds request validation to check the given
     audiences and (optionally) purpose.
     """
-
     def decorator(f):
         """
         Decorate the given function to check for a valid JWT header.
@@ -221,7 +224,7 @@ def require_auth_header(aud, purpose='access'):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            set_current_token(validate_request(aud=aud, purpose=purpose))
+            get_auth_token_from_request(aud, purpose)
             return f(*args, **kwargs)
 
         return wrapper

@@ -1,11 +1,6 @@
 """authutils.auth_driver"""
-
-
 import flask
-import flask_sqlalchemy_session
 import sqlalchemy
-import userdatamodel
-from userdatamodel.user import AccessPrivilege
 
 from datamodelutils import models
 from cdiserrors import (
@@ -18,37 +13,15 @@ from authutils.globals import (
     MEMBER_DOWNLOADABLE_STATES,
     SUBMITTER_DOWNLOADABLE_STATES,
 )
-from authutils.federated_user import FederatedUser
-
 
 class AuthDriver(object):
     """
     Responsible for checking user's access permission and getting user
-    information from the token passed to gdcapi.
+    information from the token.
     """
 
     def __init__(self, auth_conf, internal_auth):
         return
-
-    def get_user_projects(self, user):
-        if not user:
-            raise AuthError('Please authenticate as a user')
-        if not flask.g.user:
-            flask.g.user = FederatedUser(user)
-        results = (
-            flask_sqlalchemy_session.current_session
-            .query(
-                userdatamodel.user.Project.auth_id, AccessPrivilege
-            )
-            .join(AccessPrivilege.project)
-            .filter(AccessPrivilege.user_id == flask.g.user.id)
-            .all()
-        )
-        return_res = {}
-        for item in results:
-            dbgap_no, user_access = item
-            return_res[dbgap_no] = user_access.privilege
-        return return_res
 
     def check_nodes(self, nodes):
         """

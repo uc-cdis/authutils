@@ -11,7 +11,6 @@ setup(
         'cdislogging',
         'cdiserrors',
         'datamodelutils',
-        'userdatamodel',
         'Flask==0.10.1',
         'Flask-SQLAlchemy-Session>=1.1,<2.0',
         'requests>=2.6.0,<3.0.0',
@@ -24,7 +23,6 @@ setup(
     dependency_links=[
         'git+https://git@github.com/uc-cdis/cdislogging.git@master#egg=cdislogging',
         'git+https://git@github.com/uc-cdis/cdiserrors.git@0.0.4#egg=cdiserrors',
-        'git+https://git@github.com/uc-cdis/userdatamodel.git@cb7143c709a1173c84de4577d3e866318a2cc834#egg=userdatamodel',
         'git+https://git@github.com/uc-cdis/datamodelutils.git@0.3.0#egg=datamodelutils', # second-hand dependency
     ],
 )
