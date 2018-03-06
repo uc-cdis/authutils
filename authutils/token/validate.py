@@ -202,6 +202,7 @@ def validate_request(aud, purpose='access'):
 
 
 def get_auth_token_from_request(aud, purpose='access'):
+    aud = aud or ['openid']
     set_current_token(validate_request(aud=aud, purpose=purpose))
 
 

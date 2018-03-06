@@ -75,7 +75,6 @@ def authorize_for_project(roles, aud=None, purpose='access'):
     def wrapper(func):
         @functools.wraps(func)
         def authorize_and_call(program, project, *args, **kwargs):
-            aud = aud or ['openid']
             get_auth_token_from_request(aud=aud, purpose=purpose)
             project_id = '{}-{}'.format(program, project)
             project_access = get_project_access(current_token, project)
