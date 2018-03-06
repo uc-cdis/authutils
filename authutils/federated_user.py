@@ -1,13 +1,8 @@
 """authutils.federated_user"""
-
-
 import collections
 import json
 
 import flask
-import flask_sqlalchemy_session
-import userdatamodel
-from userdatamodel.user import AccessPrivilege
 
 from datamodelutils import models
 from cdiserrors import (
@@ -103,26 +98,6 @@ class FederatedUser(object):
     def set_phs_ids(self):
         self._phsids = flask.current_app.auth.get_user_projects(self.user)
         return self._phsids
-
-    def get_role_by_dbgap(self, dbgap_no):
-        project = (
-            flask_sqlalchemy_session.current_session
-            .query(userdatamodel.user.Project)
-            .filter(userdatamodel.user.Project.auth_id == dbgap_no)
-            .first()
-        )
-        if not project:
-            raise InternalError("Don't have project with {0}".format(dbgap_no))
-        roles = (
-            flask_sqlalchemy_session.current_session
-            .query(AccessPrivilege)
-            .filter(AccessPrivilege.user_id == flask.g.user.id)
-            .filter(AccessPrivilege.project_id == project.id)
-            .first()
-        )
-        if not roles:
-            raise AuthError("You don't have access to the data")
-        return roles
 
     def fetch_project_ids(self, role='_member_'):
         result = []
