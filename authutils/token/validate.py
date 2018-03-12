@@ -165,7 +165,8 @@ def validate_jwt(
         issuers = []
         issuers.append(
             flask.current_app.config.get('OIDC_ISSUER')
-            or flask.current_app.config['USER_API']
+            or flask.current_app.config.get('USER_API')
+            or flask.current_app.config.get('BASE_URL')
         )
     if public_key is None:
         public_key = get_public_key_for_token(
