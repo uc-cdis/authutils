@@ -67,7 +67,7 @@ def rsa_private_key(_hazmat_rsa_private_key):
 
 
 @pytest.fixture(scope='session')
-def rsa_private_key_2(_hazmat_rsa_private_key):
+def rsa_private_key_2(_hazmat_rsa_private_key_2):
     """
     Return a (second, different) string of an RSA private key in PEM format.
 
