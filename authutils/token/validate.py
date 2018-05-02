@@ -163,11 +163,10 @@ def validate_jwt(
     """
     if not issuers:
         issuers = []
-        issuers.append(
-            flask.current_app.config.get('OIDC_ISSUER')
-            or flask.current_app.config.get('USER_API')
-            or flask.current_app.config.get('BASE_URL')
-        )
+        for config_var in ['OIDC_ISSUER', 'USER_API', 'BASE_URL']:
+            value = flask.current_app.config.get(config_var)
+            if value:
+                issuers.append(value)
     if public_key is None:
         public_key = get_public_key_for_token(
             encoded_token,
