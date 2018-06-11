@@ -4,7 +4,6 @@ Define pytest fixtures for testing auth utils.
 """
 
 from datetime import datetime, timedelta
-import os
 import uuid
 
 import flask
@@ -78,7 +77,7 @@ def claims(default_audiences, iss):
 
 @pytest.fixture(scope='session')
 def default_kid():
-    return 'key-01'
+    return 'fence_key_2018-03-19T12:31:57Z'
 
 
 @pytest.fixture(scope='session')
@@ -94,6 +93,8 @@ def example_keys_response(default_kid, rsa_public_key, rsa_public_key_2):
     """
     return {
         'keys': [
+            [default_kid, rsa_public_key],
+            ['fence_key_2018-03-19T12:31:57Z', rsa_public_key],
             [default_kid, rsa_public_key],
             ['key-02', rsa_public_key_2]
         ]
