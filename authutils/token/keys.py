@@ -4,7 +4,10 @@ issuers and retrieving the public key which can be used to verify a given JWT.
 
 The public keys should be stored on the flask app in a `jwt_public_keys`
 attribute, which will be a dictionary mapping issuer URLs (`iss` in a JWT) to
-ordered dictionaries mapping key IDs to public key strings.
+ordered dictionaries mapping key IDs to public key strings. The ordered
+dictionaries must be sorted in descending order with most recent date/time put
+first in the list. If a key ID in a tokekn is not recognized, default to using
+the most recent keypair in the dictionary.
 
 For example:
 
@@ -12,11 +15,11 @@ For example:
 
     flask.current_app.jwt_public_keys == {
         'http://some-gen3-stack.net/user': OrderedDict([
-            'key-01': '-----BEGIN PUBLIC KEY-----...',
-            'key-02': '-----BEGIN PUBLIC KEY-----...',
+            'fence_key_2018-03-19T12:31:57Z': <public key>,
+            'fence_key_2018-01-28T14:23:38Z': <public key>,
         ]),
         'http://different-gen3-site.org/user': OrderedDict([
-            'key-01': '-----BEGIN PUBLIC KEY-----...',
+            'fence_key_2018-02-12T14:29:51Z': <public key>,
         ]),
     }
 """
@@ -97,7 +100,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True):
     """
     Given a key id ``kid``, get the public key from the flask app belonging to
     this key id. The key id is allowed to be None, in which case, use the the
-    first key in the OrderedDict.
+    first key in the OrderedDict (the most recently-dated keypair).
 
     - If current flask app is not holding public keys (ordered dictionary) or
       key id is in token headers and the key id does not appear in those public
@@ -145,7 +148,16 @@ def get_public_key(kid, iss=None, attempt_refresh=True):
     try:
         return iss_public_keys[kid]
     except KeyError:
-        raise JWTError('no key exists with given key id: {}'.format(kid))
+        # No keypair with matching key ID found, so just use the most recent
+        # one. The public keys should be sorted with the most recent key listed
+        # first; default to checking with that one and warn about the key ID
+        # not beingn found in the keypairs.
+        flask.current_app.logger.warn(
+            'no key exists with given key id: {}\n'
+            'defaulting to most recent keypair'
+            .format(kid)
+        )
+        return list(iss_public_keys.values())[0]
 
 
 def get_public_key_for_token(encoded_token, attempt_refresh=True):
