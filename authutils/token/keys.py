@@ -163,7 +163,7 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True):
         str: public RSA key for token verification
     """
     kid = jwt.get_unverified_header(encoded_token).get('kid')
-    force_issuer = flask.current_app.config.get(['FORCE_ISSUER'])
+    force_issuer = flask.current_app.config.get('FORCE_ISSUER')
     if force_issuer:
         iss = flask.current_app.config['USER_API']
     else:
