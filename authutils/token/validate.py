@@ -1,3 +1,9 @@
+# pylint: disable=protected-access
+"""
+Define functions for validating a JWT and tracking the current token and claims
+from a request.
+"""
+
 import functools
 
 import flask
@@ -16,6 +22,13 @@ from authutils.token.keys import get_public_key_for_token
 #: Proxy for the current token, which gets assigned to in
 #: ``require_auth_header``, so any function using that as a decorator can then
 #: use ``current_token`` to get the claims for the token.
+#:
+#: (Note that this should really be called `set_current_claims`, since we're
+#: using the claims here and not the raw token, which *is* what gets used for
+#: `store_session_token`/`get_session_token`.)
+#:
+#: Anything that needs to check a JWT should try to use this, and set it if it
+#: wasn't already, to avoid redundant validation.
 current_token = LocalProxy(lambda: getattr(flask.g, '_current_token', None))
 
 
@@ -28,13 +41,19 @@ def store_session_token(token):
 
 
 def get_session_token():
+    """
+    Get the current JWT (in encoded form), from either a bearer auth header or
+    the `_authutils_access_token` in the flask session.
+
+    Return:
+        str:
+    """
     auth_header = flask.request.headers.get('Authorization')
     token = None
     if auth_header:
         items = auth_header.split(' ')
         if len(items) == 2 and items[0].lower() == 'bearer':
             token = items[1]
-
     return token or flask.session.get('_authutils_access_token')
 
 
@@ -201,7 +220,7 @@ def validate_request(aud, purpose='access'):
     return validate_jwt(encoded_token, aud, purpose)
 
 
-def require_auth_header(aud, purpose='access'):
+def require_auth_header(aud, purpose=None):
     """
     Return a decorator which adds request validation to check the given
     audiences and (optionally) purpose.
