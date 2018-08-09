@@ -51,7 +51,9 @@ def authorize_for_project(*roles):
             # Get intersection of user's roles and requested roles
             print roles
             print flask.g.user.roles[project_id]
+            print set(flask.g.user.roles[project_id]) & set(roles)
             if not set(flask.g.user.roles[project_id]) & set(roles):
+                print "entered flow for throwing 403"
                 raise AuthZError(
                     role_error_msg(flask.g.user.username, roles, project_id)
                 )
