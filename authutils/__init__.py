@@ -47,10 +47,10 @@ def authorize_for_project(*roles):
         @functools.wraps(func)
         def authorize_and_call(program, project, *args, **kwargs):
             project_id = '{}-{}'.format(program, project)
-            print "before check_user_credential"
             check_user_credential()
-            print "after check_user_credential (shouldn't print)"
             # Get intersection of user's roles and requested roles
+            print roles
+            print flask.g.user.roles[project_id]
             if not set(flask.g.user.roles[project_id]) & set(roles):
                 raise AuthZError(
                     role_error_msg(flask.g.user.username, roles, project_id)

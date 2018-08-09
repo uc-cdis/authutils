@@ -30,14 +30,10 @@ def store_session_token(token):
 def get_session_token():
     auth_header = flask.request.headers.get('Authorization')
     token = None
-    print "in get_session_token"
-    print auth_header
     if auth_header:
         items = auth_header.split(' ')
         if len(items) == 2 and items[0].lower() == 'bearer':
             token = items[1]
-    print token
-    print flask.session.get('_authutils_access_token')
     return token or flask.session.get('_authutils_access_token')
 
 
