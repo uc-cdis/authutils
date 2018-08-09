@@ -10,7 +10,7 @@ from flask_sqlalchemy_session import current_session
 from userdatamodel.user import HMACKeyPair, User
 
 from authutils.auth_driver import AuthDriver
-from authutils.errors import AuthError
+from authutils.errors import AuthNError, AuthZError
 from authutils.federated_user import FederatedUser
 from authutils.oauth2.client.authorize import client_do_authorize
 from authutils.token import get_session_token
@@ -32,7 +32,7 @@ roles = dict(
 def admin_auth():
     check_user_credential()
     if not flask.g.user.user.is_admin:
-        raise AuthError("You don't have admin access to perform this action")
+        raise AuthZError("You don't have admin access to perform this action")
 
 
 def authorize_for_project(*roles):
@@ -50,7 +50,7 @@ def authorize_for_project(*roles):
             check_user_credential()
             # Get intersection of user's roles and requested roles
             if not set(flask.g.user.roles[project_id]) & set(roles):
-                raise AuthError(
+                raise AuthZError(
                     role_error_msg(flask.g.user.username, roles, project_id)
                 )
             return func(program, project, *args, **kwargs)
@@ -61,7 +61,7 @@ def authorize_for_project(*roles):
 def check_user_credential():
     token = get_session_token()
     if not token:
-        raise AuthError("No authentication is provided")
+        raise AuthNError("No authentication is provided")
     claims = validate_jwt(token, aud={'openid'})
     set_user_by_id(claims['sub'])
 
@@ -73,7 +73,7 @@ def get_secret_key_and_user(access_key):
         .first()
     )
     if not hmac_keypair:
-        raise AuthError(
+        raise AuthNError(
             "Access key doesn't exist, or the key in use does not match any"
             " existing entries"
         )
@@ -86,7 +86,7 @@ def get_secret_key_and_user(access_key):
 def set_user_by_id(user_id):
     user = current_session.query(User).filter_by(id=user_id).first()
     if not user:
-        raise AuthError('no user found with ID {}'.format(user_id))
+        raise AuthNError('no user found with ID {}'.format(user_id))
     flask.g.user = FederatedUser(user=user)
 
 
@@ -97,7 +97,7 @@ def set_user_by_username(username):
         .first()
     )
     if not user:
-        raise AuthError("User doesn't exist.")
+        raise AuthNError("User doesn't exist.")
     flask.g.user = flask.g.get('user', FederatedUser(user=user))
 
 
@@ -107,7 +107,7 @@ def require_auth():
     """
     check_user_credential()
     if not flask.g.user:
-        raise AuthError('This endpoint requires authentication')
+        raise AuthNError('This endpoint requires authentication')
 
 
 def role_error_msg(user_name, roles, project):

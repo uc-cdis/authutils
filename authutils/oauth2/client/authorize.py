@@ -3,7 +3,7 @@ from authlib.specs.rfc6749.errors import OAuth2Error
 import flask
 from flask import current_app
 
-from authutils.errors import AuthError
+from authutils.errors import AuthNError
 from authutils.token import store_session_token
 
 
@@ -15,7 +15,7 @@ def client_do_authorize():
         or flask.request.args['state'] != flask.session.pop('state')
     )
     if mismatched_state:
-        raise AuthError(
+        raise AuthNError(
             'could not authorize; state did not match across auth requests'
         )
     try:
@@ -25,6 +25,6 @@ def client_do_authorize():
         store_session_token(token['access_token'])
         return token
     except KeyError as e:
-        raise AuthError('error in token response: {}'.format(token))
+        raise AuthNError('error in token response: {}'.format(token))
     except (OAuth2Error, OAuthException) as e:
-        raise AuthError(str(e))
+        raise AuthNError(str(e))

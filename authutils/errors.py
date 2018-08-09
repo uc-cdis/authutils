@@ -1,4 +1,4 @@
-from cdiserrors import AuthNError
+from cdiserrors import AuthNError, AuthZError
 
 
 class JWTError(AuthNError):
