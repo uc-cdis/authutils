@@ -1,17 +1,12 @@
-from cdiserrors import AuthNError as CDISAuthNError
+from cdiserrors import AuthNError
 
 
-class AuthError(CDISAuthNError):
-
-    pass
-
-
-class JWTError(AuthError):
+class JWTError(AuthNError):
 
     pass
 
 
-class JWTExpiredError(AuthError):
+class JWTExpiredError(AuthNError):
 
     pass
 
