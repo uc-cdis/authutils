@@ -47,7 +47,9 @@ def authorize_for_project(*roles):
         @functools.wraps(func)
         def authorize_and_call(program, project, *args, **kwargs):
             project_id = '{}-{}'.format(program, project)
+            print "before check_user_credential"
             check_user_credential()
+            print "after check_user_credential (shouldn't print)"
             # Get intersection of user's roles and requested roles
             if not set(flask.g.user.roles[project_id]) & set(roles):
                 raise AuthZError(
@@ -60,6 +62,8 @@ def authorize_for_project(*roles):
 
 def check_user_credential():
     token = get_session_token()
+    print "in check_user_credential"
+    print token
     if not token:
         raise AuthNError("No authentication is provided")
     claims = validate_jwt(token, aud={'openid'})
