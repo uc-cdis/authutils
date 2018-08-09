@@ -34,7 +34,6 @@ def get_session_token():
         items = auth_header.split(' ')
         if len(items) == 2 and items[0].lower() == 'bearer':
             token = items[1]
-
     return token or flask.session.get('_authutils_access_token')
 
 

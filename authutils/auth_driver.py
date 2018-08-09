@@ -9,7 +9,8 @@ from userdatamodel.user import AccessPrivilege
 
 from datamodelutils import models
 from cdiserrors import (
-    AuthError,
+    AuthNError,
+    AuthZError,
     InternalError,
     NotFoundError,
 )
@@ -32,7 +33,7 @@ class AuthDriver(object):
 
     def get_user_projects(self, user):
         if not user:
-            raise AuthError('Please authenticate as a user')
+            raise AuthNError('Please authenticate as a user')
         if not flask.g.user:
             flask.g.user = FederatedUser(user)
         results = (
@@ -61,17 +62,17 @@ class AuthDriver(object):
             if node_acl == ['open']:
                 continue
             elif node_acl == []:
-                raise AuthError(
+                raise AuthZError(
                     'Requested file %s does not allow read access' %
                     node.node_id, code=403)
             else:
                 if flask.g.user.token is None:
-                    raise AuthError('Please specify a X-Auth-Token')
+                    raise AuthNError('Please specify a X-Auth-Token')
                 else:
                     user_acl = (
                         flask.g.user.get_phs_ids(self.get_role(node)))
                     if not(set(node_acl) & set(user_acl)):
-                        raise AuthError(
+                        raise AuthZError(
                             "You don't have access to the data")
         return 200
 

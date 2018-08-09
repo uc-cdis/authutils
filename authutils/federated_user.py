@@ -11,7 +11,8 @@ from userdatamodel.user import AccessPrivilege
 
 from datamodelutils import models
 from cdiserrors import (
-    AuthError,
+    AuthNError,
+    AuthZError,
     InternalError,
     InvalidTokenError,
 )
@@ -121,7 +122,7 @@ class FederatedUser(object):
             .first()
         )
         if not roles:
-            raise AuthError("You don't have access to the data")
+            raise AuthZError("You don't have access to the data")
         return roles
 
     def fetch_project_ids(self, role='_member_'):
