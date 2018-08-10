@@ -45,8 +45,10 @@ def get_session_token():
     Get the current JWT (in encoded form), from either a bearer auth header or
     the `_authutils_access_token` in the flask session.
 
+    Requires flask request context.
+
     Return:
-        str:
+        str: encoded token
     """
     auth_header = flask.request.headers.get('Authorization')
     token = None
