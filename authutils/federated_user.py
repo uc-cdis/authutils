@@ -19,7 +19,13 @@ from userdatamodel.user import AccessPrivilege, User
 from authutils.token.validate import validate_request
 
 
-class FederatedUser(object):
+class CurrentUser(object):
+    """
+    Args:
+        aud (str): audiences required for validating the JWT
+        claims (dict): claims from the user's token
+        hmac_keypair (userdatamodel.user.HMACKeyPair): user's HMAC keypair
+    """
 
     def __init__(self, aud='openid', claims=None, hmac_keypair=None):
         if not claims:
@@ -33,12 +39,15 @@ class FederatedUser(object):
             .get('user', {})
             .get('name', None)
         )
+        self.projects = (
+            self.claims
+            .get('context', {})
+            .get('user', {})
+            .get('projects', [])
+        )
         self.hmac_keypair = hmac_keypair
 
-        self._phsids = {}
         self.project_ids = {}
-        self._roles = collections.defaultdict(set)
-        self.role = None
         self.mapping = {}
 
     def __str__(self):
@@ -67,78 +76,12 @@ class FederatedUser(object):
                 .first()
             )
 
-    @cached_property
-    def roles(self):
-        return {
-            project: role
-            for phsid, roles in self.phsids.iteritems()
-            for project in self.get_projects_mapping(phsid)
-            for role in roles
-        }
-
-    @cached_property
-    def phsids(self):
-        return flask.current_app.auth.get_user_projects(self.user)
-
-    def get_projects_mapping(self, phsid):
-        if phsid in self.mapping:
-            return self.mapping[phsid]
-        with flask.current_app.db.session_scope():
-            project = (
-                flask.current_app
-                .db
-                .nodes(models.Project)
-                .props(dbgap_accession_number=phsid)
-                .first()
-            )
-            self.mapping[phsid] = []
-            if project:
-                self.mapping[phsid] = [
-                    project.programs[0].name + '-' + project.code
-                ]
-            else:
-                program = (
-                    flask.current_app
-                    .db
-                    .nodes(models.Program)
-                    .props(dbgap_accession_number=phsid)
-                    .first()
-                )
-                if program:
-                    self.mapping[phsid] = [
-                        program.name + '-' + node.code
-                        for node in program.projects
-                    ]
-        return self.mapping[phsid]
-
-    def get_role_by_dbgap(self, dbgap_no):
-        project = (
-            flask_sqlalchemy_session.current_session
-            .query(userdatamodel.user.Project)
-            .filter(userdatamodel.user.Project.auth_id == dbgap_no)
-            .first()
-        )
-        if not project:
-            raise InternalError("Don't have project with {0}".format(dbgap_no))
-        roles = (
-            flask_sqlalchemy_session.current_session
-            .query(AccessPrivilege)
-            .filter(AccessPrivilege.user_id == flask.g.user.id)
-            .filter(AccessPrivilege.project_id == project.id)
-            .first()
-        )
-        if not roles:
-            raise AuthError("You don't have access to the data")
-        return roles
-
-    def fetch_project_ids(self, role='_member_'):
+    def get_project_ids(self, role='_member_'):
+        """
+        Return a list of projects for which the user has this role.
+        """
         return [
-            self.get_projects_mapping(phsid)
-            for phsid, roles in self.phsids.iteritems()
+            project
+            for project, roles in self.projects.iteritems()
             if role in roles
         ]
-
-    def get_project_ids(self, role='_member_'):
-        if role not in self.project_ids:
-            self.project_ids[role] = self.fetch_project_ids(role)
-        return self.project_ids[role]
