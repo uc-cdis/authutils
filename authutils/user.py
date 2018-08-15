@@ -3,6 +3,7 @@ import json
 
 from addict import Dict
 from cached_property import cached_property
+from cdiserrors import AuthZError
 import flask
 from userdatamodel.user import User
 from werkzeug.local import LocalProxy
@@ -11,10 +12,9 @@ from authutils.errors import AuthError
 from authutils.token.validate import set_current_token, validate_request
 
 
-def _get_or_set_current_user(**kwargs):
-    if not hasattr(flask.g, 'user'):
-        flask.g.user = CurrentUser(**kwargs)
-        set_current_token(flask.g.user.claims)
+def _set_current_user(**kwargs):
+    flask.g.user = CurrentUser(**kwargs)
+    set_current_token(flask.g.user.claims)
     return flask.g.user
 
 
@@ -22,7 +22,7 @@ def _get_or_set_current_user(**kwargs):
 #
 # Other modules importing authutils can import ``current_user`` from here,
 # which will use ``_get_or_set_current_user`` to look up the user.
-current_user = LocalProxy(_get_or_set_current_user)
+current_user = LocalProxy(_set_current_user)
 
 
 class CurrentUser(object):
@@ -106,7 +106,7 @@ class CurrentUser(object):
         Raise an error if this user doesn't have admin privileges.
         """
         if not self.is_admin:
-            raise AuthError(
+            raise AuthZError(
                 'user ({}) does not have admin privileges'
                 .format(self.id)
             )
@@ -147,7 +147,7 @@ def set_global_user(**decorator_kwargs):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            _get_or_set_current_user(**decorator_kwargs)
+            _set_current_user(**decorator_kwargs)
             return func(*args, **kwargs)
 
         return wrapper
