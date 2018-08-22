@@ -57,7 +57,7 @@ def claims(default_audiences, iss):
     """
     now = datetime.now()
     iat = int(now.strftime('%s'))
-    exp = int((now + timedelta(seconds=60)).strftime('%s'))
+    exp = int((now + timedelta(seconds=600)).strftime('%s'))
     return {
         'pur': 'access',
         'aud': default_audiences,

@@ -5,7 +5,6 @@ from addict import Dict
 from cached_property import cached_property
 from cdiserrors import AuthZError
 import flask
-from userdatamodel.user import User
 from werkzeug.local import LocalProxy
 
 from authutils.errors import AuthError
@@ -113,7 +112,7 @@ def set_global_user(**decorator_kwargs):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            _set_current_user(**decorator_kwargs)
+            set_current_user(**decorator_kwargs)
             return func(*args, **kwargs)
 
         return wrapper
