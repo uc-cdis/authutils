@@ -1,1 +1,1 @@
-TEST_RESPONSE_JSON = {'test_response': 'OK'}
+TEST_RESPONSE_JSON = {"test_response": "OK"}
