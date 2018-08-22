@@ -1,19 +1,32 @@
 language: python
 
-python: 2.7
+python:
+  - "2.7"
+  - "3.6"
 
 sudo: false
 
 cache: pip
+
+matrix:
+  allow_failures:
+    - python: "3.6"
+
+env:
+  - REPOSITORY="uc-cdis/authutils" PR_NUMBER="$TRAVIS_PULL_REQUEST"
+
+# GITHUB_TOKEN environment variable required by `wool` is already in travis
 
 install:
   - pip uninstall -y userdatamodel || true
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - python setup.py install
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install -e git+https://git@github.com/uc-cdis/wool.git#egg=wool; fi
 
 script:
   - py.test -vv --cov=authutils --cov-report xml tests
 
 after_script:
   - python-codacy-coverage -r coverage.xml
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then wool; fi
