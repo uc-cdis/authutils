@@ -34,10 +34,10 @@ from flask import current_app
 import authutils.oauth2.client.authorize
 
 
-blueprint = flask.Blueprint('oauth', __name__)
+blueprint = flask.Blueprint("oauth", __name__)
 
 
-@blueprint.route('/authorization_url', methods=['GET'])
+@blueprint.route("/authorization_url", methods=["GET"])
 def get_authorization_url():
     """
     Provide a redirect to the authorization endpoint from the OP.
@@ -46,34 +46,34 @@ def get_authorization_url():
     redirect_uri = current_app.oauth_client.session.redirect_uri
     # Get the authorization URL and the random state; save the state to check
     # later, and return the URL.
-    authorization_url, state = (
-        current_app.oauth_client.generate_authorize_redirect(redirect_uri)
+    authorization_url, state = current_app.oauth_client.generate_authorize_redirect(
+        redirect_uri
     )
-    flask.session['state'] = state
+    flask.session["state"] = state
     return authorization_url
 
 
-@blueprint.route('/authorize', methods=['GET'])
+@blueprint.route("/authorize", methods=["GET"])
 def do_authorize():
     """
     Send a token request to the OP.
     """
     authutils.oauth2.client.authorize.client_do_authorize()
-    return '', 204
+    return "", 204
 
 
-@blueprint.route('/logout', methods=['GET'])
+@blueprint.route("/logout", methods=["GET"])
 def logout_oauth():
     """
     Log out the user.
 
     To accomplish this, just revoke the refresh token if provided.
     """
-    url = urljoin(current_app.config.get('USER_API'), '/oauth2/revoke')
-    token = flask.request.form.get('token')
+    url = urljoin(current_app.config.get("USER_API"), "/oauth2/revoke")
+    token = flask.request.form.get("token")
     try:
         current_app.oauth_client.session.revoke_token(url, token)
     except APIError as e:
-        msg = 'could not log out, failed to revoke token: {}'.format(e.message)
+        msg = "could not log out, failed to revoke token: {}".format(e.message)
         return msg, 400
-    return '', 204
+    return "", 204

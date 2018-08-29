@@ -10,8 +10,8 @@ from authutils.token.validate import (
 
 
 __all__ = [
-    'current_token',
-    'get_session_token',
-    'set_current_token',
-    'store_session_token',
+    "current_token",
+    "get_session_token",
+    "set_current_token",
+    "store_session_token",
 ]

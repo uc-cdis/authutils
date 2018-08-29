@@ -42,28 +42,19 @@ class CurrentUser(object):
 
     def __init__(self, claims=None, jwt_kwargs=None):
         jwt_kwargs = jwt_kwargs or {}
-        if 'aud' not in jwt_kwargs:
-            jwt_kwargs['aud'] = {'openid'}
+        if "aud" not in jwt_kwargs:
+            jwt_kwargs["aud"] = {"openid"}
         self._claims = claims or validate_request(**jwt_kwargs)
-        self.id = self._claims['sub']
-        self.username = self._get_user_info('name')
-        self.projects = self._get_user_info('projects', default={})
+        self.id = self._claims["sub"]
+        self.username = self._get_user_info("name")
+        self.projects = self._get_user_info("projects", default={})
 
     def __str__(self):
-        str_out = {
-            'id': self.id,
-            'username': self.username,
-            'is_admin': self.is_admin,
-        }
+        str_out = {"id": self.id, "username": self.username, "is_admin": self.is_admin}
         return json.dumps(str_out)
 
     def _get_user_info(self, field, default=None):
-        return (
-            self._claims
-            .get('context', {})
-            .get('user', {})
-            .get(field, default)
-        )
+        return self._claims.get("context", {}).get("user", {}).get(field, default)
 
     @cached_property
     def is_admin(self):
@@ -75,26 +66,21 @@ class CurrentUser(object):
         """
         # Try to just use the user context from the claims. If that doesn't
         # have the ``is_admin`` field then use the database lookup.
-        return bool(self._get_user_info('is_admin'))
+        return bool(self._get_user_info("is_admin"))
 
     def require_admin(self):
         """
         Raise an error if this user doesn't have admin privileges.
         """
         if not self.is_admin:
-            raise AuthZError(
-                'user ({}) does not have admin privileges'
-                .format(self.id)
-            )
+            raise AuthZError("user ({}) does not have admin privileges".format(self.id))
 
-    def get_project_ids(self, role='_member_'):
+    def get_project_ids(self, role="_member_"):
         """
         Return a list of projects for which the user has this role.
         """
         return [
-            project
-            for project, roles in self.projects.iteritems()
-            if role in roles
+            project for project, roles in self.projects.iteritems() if role in roles
         ]
 
 
@@ -109,7 +95,6 @@ def set_global_user(**decorator_kwargs):
     """
 
     def decorator(func):
-
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             set_current_user(**decorator_kwargs)

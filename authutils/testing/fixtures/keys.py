@@ -10,13 +10,11 @@ def _new_hazmat_rsa_private_key():
         cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey
     """
     return rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-        backend=default_backend(),
+        public_exponent=65537, key_size=2048, backend=default_backend()
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def _hazmat_rsa_private_key():
     """
     Return:
@@ -25,7 +23,7 @@ def _hazmat_rsa_private_key():
     return _new_hazmat_rsa_private_key()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def _hazmat_rsa_private_key_2():
     """
     Make a different private key than the first one.
@@ -36,7 +34,7 @@ def _hazmat_rsa_private_key_2():
     return _new_hazmat_rsa_private_key()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def rsa_private_key(_hazmat_rsa_private_key):
     """
     Return a string of an RSA private key in PEM format.
@@ -66,7 +64,7 @@ def rsa_private_key(_hazmat_rsa_private_key):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def rsa_private_key_2(_hazmat_rsa_private_key_2):
     """
     Return a (second, different) string of an RSA private key in PEM format.
@@ -96,7 +94,7 @@ def rsa_private_key_2(_hazmat_rsa_private_key_2):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def rsa_public_key(_hazmat_rsa_private_key):
     """
     Return a string of an RSA public key in PEM format. The key returned from
@@ -126,7 +124,7 @@ def rsa_public_key(_hazmat_rsa_private_key):
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def rsa_public_key_2(_hazmat_rsa_private_key_2):
     """
     Return a string of a (second, different) RSA public key in PEM format. The

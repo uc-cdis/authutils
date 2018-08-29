@@ -74,23 +74,20 @@ def refresh_jwt_public_keys(user_api=None):
     """
     # First, make sure the app has a ``jwt_public_keys`` attribute set up.
     missing_public_keys = (
-        not hasattr(flask.current_app, 'jwt_public_keys')
+        not hasattr(flask.current_app, "jwt_public_keys")
         or not flask.current_app.jwt_public_keys
     )
     if missing_public_keys:
         flask.current_app.jwt_public_keys = {}
-    user_api = user_api or flask.current_app.config.get('USER_API')
+    user_api = user_api or flask.current_app.config.get("USER_API")
     if not user_api:
-        raise ValueError('no URL(s) provided for user API')
-    path = '/'.join(path.strip('/') for path in [user_api, 'jwt', 'keys'])
-    jwt_public_keys = requests.get(path).json()['keys']
+        raise ValueError("no URL(s) provided for user API")
+    path = "/".join(path.strip("/") for path in [user_api, "jwt", "keys"])
+    jwt_public_keys = requests.get(path).json()["keys"]
     flask.current_app.logger.info(
-        'refreshing public keys; updated to:\n'
-        + json.dumps(jwt_public_keys, indent=4)
+        "refreshing public keys; updated to:\n" + json.dumps(jwt_public_keys, indent=4)
     )
-    flask.current_app.jwt_public_keys.update(
-        {user_api: OrderedDict(jwt_public_keys)}
-    )
+    flask.current_app.jwt_public_keys.update({user_api: OrderedDict(jwt_public_keys)})
 
 
 def get_public_key(kid, iss=None, attempt_refresh=True):
@@ -130,22 +127,21 @@ def get_public_key(kid, iss=None, attempt_refresh=True):
     """
     iss = (
         iss
-        or flask.current_app.config.get('OIDC_ISSUER')
-        or flask.current_app.config['USER_API']
+        or flask.current_app.config.get("OIDC_ISSUER")
+        or flask.current_app.config["USER_API"]
     )
-    need_refresh = (
-        not hasattr(flask.current_app, 'jwt_public_keys')
-        or (kid and kid not in flask.current_app.jwt_public_keys.get(iss, {}))
+    need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
+        kid and kid not in flask.current_app.jwt_public_keys.get(iss, {})
     )
     if need_refresh and attempt_refresh:
         refresh_jwt_public_keys(iss)
     if iss not in flask.current_app.jwt_public_keys:
-        raise JWTError('issuer not found: {}'.format(iss))
+        raise JWTError("issuer not found: {}".format(iss))
     iss_public_keys = flask.current_app.jwt_public_keys[iss]
     try:
         return iss_public_keys[kid]
     except KeyError:
-        raise JWTError('no key exists with given key id: {}'.format(kid))
+        raise JWTError("no key exists with given key id: {}".format(kid))
 
 
 def get_public_key_for_token(encoded_token, attempt_refresh=True):
@@ -162,10 +158,10 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True):
     Return:
         str: public RSA key for token verification
     """
-    kid = jwt.get_unverified_header(encoded_token).get('kid')
-    force_issuer = flask.current_app.config.get('FORCE_ISSUER')
+    kid = jwt.get_unverified_header(encoded_token).get("kid")
+    force_issuer = flask.current_app.config.get("FORCE_ISSUER")
     if force_issuer:
-        iss = flask.current_app.config['USER_API']
+        iss = flask.current_app.config["USER_API"]
     else:
-        iss = jwt.decode(encoded_token, verify=False).get('iss')
+        iss = jwt.decode(encoded_token, verify=False).get("iss")
     return get_public_key(kid, iss=iss, attempt_refresh=attempt_refresh)

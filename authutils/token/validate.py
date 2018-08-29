@@ -29,7 +29,7 @@ from authutils.token.keys import get_public_key_for_token
 #:
 #: Anything that needs to check a JWT should try to use this, and set it if it
 #: wasn't already, to avoid redundant validation.
-current_token = LocalProxy(lambda: getattr(flask.g, '_current_token', None))
+current_token = LocalProxy(lambda: getattr(flask.g, "_current_token", None))
 
 
 def set_current_token(token):
@@ -37,7 +37,7 @@ def set_current_token(token):
 
 
 def store_session_token(token):
-    flask.session['_authutils_access_token'] = token
+    flask.session["_authutils_access_token"] = token
 
 
 def get_session_token():
@@ -50,13 +50,13 @@ def get_session_token():
     Return:
         str: encoded token
     """
-    auth_header = flask.request.headers.get('Authorization')
+    auth_header = flask.request.headers.get("Authorization")
     token = None
     if auth_header:
-        items = auth_header.split(' ')
-        if len(items) == 2 and items[0].lower() == 'bearer':
+        items = auth_header.split(" ")
+        if len(items) == 2 and items[0].lower() == "bearer":
             token = items[1]
-    return token or flask.session.get('_authutils_access_token')
+    return token or flask.session.get("_authutils_access_token")
 
 
 def _validate_purpose(claims, pur):
@@ -75,12 +75,13 @@ def _validate_purpose(claims, pur):
             if the claims do not contain a purpose claim or if it doesn't match
             the expected value
     """
-    if 'pur' not in claims:
-        raise JWTPurposeError('claims missing `pur` claim')
-    if claims['pur'] != pur:
+    if "pur" not in claims:
+        raise JWTPurposeError("claims missing `pur` claim")
+    if claims["pur"] != pur:
         raise JWTPurposeError(
-            'claims have incorrect purpose: expected {}, got {}'
-            .format(pur, claims['pur'])
+            "claims have incorrect purpose: expected {}, got {}".format(
+                pur, claims["pur"]
+            )
         )
 
 
@@ -111,9 +112,9 @@ def _validate_jwt(encoded_token, public_key, aud, issuers):
     """
     # Typecheck arguments.
     if not isinstance(aud, set) and not isinstance(aud, list):
-        raise ValueError('aud must be set or list')
+        raise ValueError("aud must be set or list")
     if not isinstance(issuers, set) and not isinstance(issuers, list):
-        raise ValueError('issuers must be set or list')
+        raise ValueError("issuers must be set or list")
 
     # To satisfy PyJWT, since the token will contain an aud field, decode has
     # to be passed one of the audiences to check here (so PyJWT doesn't raise
@@ -126,8 +127,7 @@ def _validate_jwt(encoded_token, public_key, aud, issuers):
     random_aud = list(aud)[0]
     try:
         token = jwt.decode(
-            encoded_token, key=public_key, algorithms=['RS256'],
-            audience=random_aud
+            encoded_token, key=public_key, algorithms=["RS256"], audience=random_aud
         )
     except jwt.InvalidAudienceError as e:
         raise JWTAudienceError(e)
@@ -141,24 +141,29 @@ def _validate_jwt(encoded_token, public_key, aud, issuers):
 
     # iss
     # Check that the issuer of the token has the expected hostname.
-    if token['iss'] not in issuers:
-        msg = 'invalid issuer {}; expected: {}'.format(token['iss'], issuers)
+    if token["iss"] not in issuers:
+        msg = "invalid issuer {}; expected: {}".format(token["iss"], issuers)
         raise JWTError(msg)
 
     # aud
     # The audiences listed in the token must completely satisfy all the
     # required audiences provided. Note that this is stricter than the
     # specification suggested in RFC 7519.
-    missing = aud - set(token['aud'])
+    missing = aud - set(token["aud"])
     if missing:
-        raise JWTAudienceError('missing audiences: ' + str(missing))
+        raise JWTAudienceError("missing audiences: " + str(missing))
 
     return token
 
 
 def validate_jwt(
-        encoded_token, aud, purpose='access', issuers=None, public_key=None,
-        attempt_refresh=True):
+    encoded_token,
+    aud,
+    purpose="access",
+    issuers=None,
+    public_key=None,
+    attempt_refresh=True,
+):
     """
     Validate a JWT and return the claims.
 
@@ -184,17 +189,16 @@ def validate_jwt(
     """
     if not issuers:
         issuers = []
-        for config_var in ['OIDC_ISSUER', 'USER_API', 'BASE_URL']:
+        for config_var in ["OIDC_ISSUER", "USER_API", "BASE_URL"]:
             value = flask.current_app.config.get(config_var)
             if value:
                 issuers.append(value)
     if public_key is None:
         public_key = get_public_key_for_token(
-            encoded_token,
-            attempt_refresh=attempt_refresh
+            encoded_token, attempt_refresh=attempt_refresh
         )
     if not aud:
-        raise ValueError('must provide at least one audience')
+        raise ValueError("must provide at least one audience")
     aud = set(aud)
     claims = _validate_jwt(encoded_token, public_key, aud, issuers)
     if purpose:
@@ -202,22 +206,18 @@ def validate_jwt(
     return claims
 
 
-def validate_request(aud, purpose='access'):
+def validate_request(aud, purpose="access"):
     """
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
     """
     # Get token from the headers.
     try:
-        encoded_token = (
-            flask.request
-            .headers['Authorization']
-            .split(' ')[1]
-        )
+        encoded_token = flask.request.headers["Authorization"].split(" ")[1]
     except IndexError:
-        raise JWTError('could not parse authorization header')
+        raise JWTError("could not parse authorization header")
     except KeyError:
-        raise JWTError('no authorization header provided')
+        raise JWTError("no authorization header provided")
     # Pass token to ``validate_jwt``.
     return validate_jwt(encoded_token, aud, purpose)
 
