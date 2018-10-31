@@ -1,7 +1,9 @@
 addict==2.1.1
+Authlib==0.9
 Flask==0.10.1
 requests==2.7.0
 python-keystoneclient==1.8.1
+PyJWT==1.5.3
 PyYAML==3.12
 sqlalchemy==0.9.9
 Werkzeug==0.12.2
