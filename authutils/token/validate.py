@@ -218,6 +218,7 @@ def validate_request(aud, purpose="access"):
         raise JWTError("could not parse authorization header")
     except KeyError:
         raise JWTError("no authorization header provided")
+
     # Pass token to ``validate_jwt``.
     return validate_jwt(encoded_token, aud, purpose)
 
