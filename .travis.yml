@@ -35,6 +35,6 @@ deploy:
   user: uc-ctds
   skip_existing: true
   on:
-    tags: true
+    branch: chore/pypi
   password:
     secure: kGoPiQHRyNZMLYXqcFkv6J6C1ApmALa9At/zS5Pkby0VFJQ6OiPCrk3fsC3shRwlBZ5tK3n1lECsOXIg8TAxJAFxjYega4djrG6N/6QwcasSOT3MnLlCMPXRifHf/W7W+HUkZz9+jyvIxjH4s8JrabuVHRIptiBQ1377W8eNPDgJL5bQ5RCyS5kxrCyEE5VHZ8S/tgKkIiDJfB13L7wqJQvp+xSqNE1u6H+SkWilxzqiHcB5Zf161geehILioKl1HwKkxTmZCuXJ3rLUxoeWYVOnj+pOBFp/37WVcGuFbz897NnU0PO57nGY8onrc+R9M/zSJkMfMcbhzsurya71g8lbx76z8RphW61Ijf4snaeXMvdcIuj8HNPyLWBGTBoIkyT7xcG8P/BKe1E+sFLyvYQT3wRyTSF0gjZiTlngNyv+xKWdxzLeYz2Pxv0kej/xD7g+uLzYFIW+j2mo6GxXVPdBVkey2SbRxE91IwCrkTIbZY5UCBlUsy/ii6DItiBcdIIr4wZ/FZfdGFE82s+VgOZeZRdxEdKdvj1WWN+HZJZ8LhxRROq4bvXqZDE0pOd/yKpclTv2M29ROOIGpDa2lNfqizqg24p64GE5hi33ETOeKqlGdetX25oFvXlOPNPIIv9WNtr4RVHttaZ1cnUnd5N5YAtxXhfAMqN0bYeFy3k=
