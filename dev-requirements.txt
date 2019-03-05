@@ -1,5 +1,0 @@
-pytest-flask==0.10.0
-pytest-cov==2.5.1
-codacy-coverage
-mock==2.0.0
-moto==1.1.24

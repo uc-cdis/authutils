@@ -1,0 +1,18 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+cdis-oauth2client = "~=0.1"
+pytest-flask = "~=0.10"
+pytest-cov = "~=2.5"
+codacy-coverage = "*"
+mock = "~=2.0"
+moto = "~=1.1"
+
+[packages]
+authutils = {editable = true,path = "."}
+
+[requires]
+python_version = "2.7"
