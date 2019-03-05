@@ -72,3 +72,6 @@ package.json
 
 # prevent committing key after building docker image
 id_rsa
+
+# pyenv
+.python-version

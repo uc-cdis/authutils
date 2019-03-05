@@ -4,12 +4,12 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-cdis-oauth2client = ">=0.1.2"
-pytest-flask = ">=0.10.0"
-pytest-cov = ">=2.5.1"
+cdis-oauth2client = "~=0.1"
+pytest-flask = "~=0.10"
+pytest-cov = "~=2.5"
 codacy-coverage = "*"
-mock = ">=2.0.0"
-moto = ">=1.1.24"
+mock = "~=2.0"
+moto = "~=1.1"
 
 [packages]
 authutils = {editable = true,path = "."}
