@@ -6,6 +6,7 @@ from a request.
 
 import functools
 
+from cdislogging import get_logger
 import flask
 import jwt
 from werkzeug.local import LocalProxy
@@ -163,6 +164,7 @@ def validate_jwt(
     issuers=None,
     public_key=None,
     attempt_refresh=True,
+    logger=None,
 ):
     """
     Validate a JWT and return the claims.
@@ -187,6 +189,7 @@ def validate_jwt(
             if auth header is missing, decoding fails, or the JWT fails to
             satisfy any expectation
     """
+    logger = logger or get_logger(__name__, log_level="info")
     if not issuers:
         issuers = []
         for config_var in ["OIDC_ISSUER", "USER_API", "BASE_URL"]:
@@ -195,7 +198,7 @@ def validate_jwt(
                 issuers.append(value)
     if public_key is None:
         public_key = get_public_key_for_token(
-            encoded_token, attempt_refresh=attempt_refresh
+            encoded_token, attempt_refresh=attempt_refresh, logger=logger,
         )
     if not aud:
         raise ValueError("must provide at least one audience")
@@ -206,11 +209,12 @@ def validate_jwt(
     return claims
 
 
-def validate_request(aud, purpose="access"):
+def validate_request(aud, purpose="access", logger=None):
     """
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
     """
+    logger = logger or get_logger(__name__, log_level="info")
     # Get token from the headers.
     try:
         encoded_token = flask.request.headers["Authorization"].split(" ")[1]
@@ -220,14 +224,15 @@ def validate_request(aud, purpose="access"):
         raise JWTError("no authorization header provided")
 
     # Pass token to ``validate_jwt``.
-    return validate_jwt(encoded_token, aud, purpose)
+    return validate_jwt(encoded_token, aud, purpose, logger=logger)
 
 
-def require_auth_header(aud, purpose=None):
+def require_auth_header(aud, purpose=None, logger=None):
     """
     Return a decorator which adds request validation to check the given
     audiences and (optionally) purpose.
     """
+    logger = logger or get_logger(__name__, log_level="info")
 
     def decorator(f):
         """
@@ -243,7 +248,7 @@ def require_auth_header(aud, purpose=None):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            set_current_token(validate_request(aud=aud, purpose=purpose))
+            set_current_token(validate_request(aud=aud, purpose=purpose, logger=logger))
             return f(*args, **kwargs)
 
         return wrapper

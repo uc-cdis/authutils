@@ -24,6 +24,7 @@ For example:
 from collections import OrderedDict
 import json
 
+from cdislogging import get_logger
 import flask
 import jwt
 import requests
@@ -32,7 +33,7 @@ import requests
 from authutils.errors import JWTError
 
 
-def refresh_jwt_public_keys(user_api=None):
+def refresh_jwt_public_keys(user_api=None, logger=None):
     """
     Update the public keys that the Flask app is currently using to validate
     JWTs.
@@ -72,6 +73,7 @@ def refresh_jwt_public_keys(user_api=None):
     Raises:
         ValueError: if user_api is not provided or set in app config
     """
+    logger = logger or get_logger(__name__, log_level="info")
     # First, make sure the app has a ``jwt_public_keys`` attribute set up.
     missing_public_keys = (
         not hasattr(flask.current_app, "jwt_public_keys")
@@ -84,13 +86,13 @@ def refresh_jwt_public_keys(user_api=None):
         raise ValueError("no URL(s) provided for user API")
     path = "/".join(path.strip("/") for path in [user_api, "jwt", "keys"])
     jwt_public_keys = requests.get(path).json()["keys"]
-    flask.current_app.logger.info(
+    logger.info(
         "refreshing public keys; updated to:\n" + json.dumps(jwt_public_keys, indent=4)
     )
     flask.current_app.jwt_public_keys.update({user_api: OrderedDict(jwt_public_keys)})
 
 
-def get_public_key(kid, iss=None, attempt_refresh=True):
+def get_public_key(kid, iss=None, attempt_refresh=True, logger=None):
     """
     Given a key id ``kid``, get the public key from the flask app belonging to
     this key id. The key id is allowed to be None, in which case, use the the
@@ -130,11 +132,12 @@ def get_public_key(kid, iss=None, attempt_refresh=True):
         or flask.current_app.config.get("OIDC_ISSUER")
         or flask.current_app.config["USER_API"]
     )
+    logger = logger or get_logger(__name__, log_level="info")
     need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
         kid and kid not in flask.current_app.jwt_public_keys.get(iss, {})
     )
     if need_refresh and attempt_refresh:
-        refresh_jwt_public_keys(iss)
+        refresh_jwt_public_keys(iss, logger=logger)
     if iss not in flask.current_app.jwt_public_keys:
         raise JWTError("issuer not found: {}".format(iss))
     iss_public_keys = flask.current_app.jwt_public_keys[iss]
@@ -144,7 +147,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True):
         raise JWTError("no key exists with given key id: {}".format(kid))
 
 
-def get_public_key_for_token(encoded_token, attempt_refresh=True):
+def get_public_key_for_token(encoded_token, attempt_refresh=True, logger=None):
     """
     Attempt to look up the public key which should be used to verify the token.
 
@@ -158,6 +161,7 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True):
     Return:
         str: public RSA key for token verification
     """
+    logger = logger or get_logger(__name__, log_level="info")
     try:
         kid = jwt.get_unverified_header(encoded_token).get("kid")
     except jwt.InvalidTokenError as e:
@@ -171,4 +175,4 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True):
             iss = jwt.decode(encoded_token, verify=False).get("iss")
         except jwt.InvalidTokenError as e:
             raise JWTError(e)
-    return get_public_key(kid, iss=iss, attempt_refresh=attempt_refresh)
+    return get_public_key(kid, iss=iss, attempt_refresh=attempt_refresh, logger=logger)
