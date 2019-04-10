@@ -36,7 +36,7 @@ class dbGaPXReferencer(object):
 
         self.db = db
         self.proxies = proxies
-        self.logger = logger or get_logger("dbGapXReferencer")
+        self.logger = logger or get_logger("dbGapXReferencer", log_level="info")
         self.logger.info("Creating new dbGaP Cross Referencer")
 
     def request_telemetry_report(self, phsid):

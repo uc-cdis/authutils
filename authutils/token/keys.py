@@ -73,7 +73,7 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
     Raises:
         ValueError: if user_api is not provided or set in app config
     """
-    logger = logger or get_logger(__name__)
+    logger = logger or get_logger(__name__, log_level="info")
     # First, make sure the app has a ``jwt_public_keys`` attribute set up.
     missing_public_keys = (
         not hasattr(flask.current_app, "jwt_public_keys")
@@ -132,7 +132,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, logger=None):
         or flask.current_app.config.get("OIDC_ISSUER")
         or flask.current_app.config["USER_API"]
     )
-    logger = logger or get_logger(__name__)
+    logger = logger or get_logger(__name__, log_level="info")
     need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
         kid and kid not in flask.current_app.jwt_public_keys.get(iss, {})
     )
@@ -161,7 +161,7 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True, logger=None):
     Return:
         str: public RSA key for token verification
     """
-    logger = logger or get_logger(__name__)
+    logger = logger or get_logger(__name__, log_level="info")
     try:
         kid = jwt.get_unverified_header(encoded_token).get("kid")
     except jwt.InvalidTokenError as e:

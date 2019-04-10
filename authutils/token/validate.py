@@ -189,7 +189,7 @@ def validate_jwt(
             if auth header is missing, decoding fails, or the JWT fails to
             satisfy any expectation
     """
-    logger = logger or get_logger(__name__)
+    logger = logger or get_logger(__name__, log_level="info")
     if not issuers:
         issuers = []
         for config_var in ["OIDC_ISSUER", "USER_API", "BASE_URL"]:
@@ -214,7 +214,7 @@ def validate_request(aud, purpose="access", logger=None):
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
     """
-    logger = logger or get_logger(__name__)
+    logger = logger or get_logger(__name__, log_level="info")
     # Get token from the headers.
     try:
         encoded_token = flask.request.headers["Authorization"].split(" ")[1]
@@ -232,7 +232,7 @@ def require_auth_header(aud, purpose=None, logger=None):
     Return a decorator which adds request validation to check the given
     audiences and (optionally) purpose.
     """
-    logger = logger or get_logger(__name__)
+    logger = logger or get_logger(__name__, log_level="info")
 
     def decorator(f):
         """
