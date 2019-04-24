@@ -31,7 +31,6 @@ setup(
         "requests~=2.6",
         "python-keystoneclient~=1.8",
         "PyJWT~=1.5",
-        "PyYAML>=3.11",
         "Werkzeug~=0.12",
         "xmltodict~=0.9",
         "cached-property~=1.4",
