@@ -6,6 +6,7 @@ from authutils.token.validate import (
     set_current_token,
     store_session_token,
     get_session_token,
+    get_jwt_token,
 )
 
 
@@ -14,4 +15,5 @@ __all__ = [
     "get_session_token",
     "set_current_token",
     "store_session_token",
+    "get_jwt_token",
 ]

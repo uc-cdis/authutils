@@ -41,10 +41,9 @@ def store_session_token(token):
     flask.session["_authutils_access_token"] = token
 
 
-def get_session_token():
+def get_jwt_token():
     """
-    Get the current JWT (in encoded form), from either a bearer auth header or
-    the `_authutils_access_token` in the flask session.
+    Get the current JWT (in encoded form), from a bearer auth header.
 
     Requires flask request context.
 
@@ -57,7 +56,20 @@ def get_session_token():
         items = auth_header.split(" ")
         if len(items) == 2 and items[0].lower() == "bearer":
             token = items[1]
-    return token or flask.session.get("_authutils_access_token")
+    return token
+
+
+def get_session_token():
+    """
+    Get the current JWT (in encoded form), from either a bearer auth header or
+    the `_authutils_access_token` in the flask session.
+
+    Requires flask request context and a matching Session interface.
+
+    Return:
+        str: encoded token
+    """
+    return get_jwt_token() or flask.session.get("_authutils_access_token")
 
 
 def _validate_purpose(claims, pur):
