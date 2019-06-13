@@ -25,7 +25,7 @@ with an OAuth client instance from the ``authlib`` package as follows:
 (NOTE the scopes are space-separated.)
 """
 
-from urlparse import urljoin
+from urllib.parse import urljoin
 
 from cdiserrors import APIError
 import flask

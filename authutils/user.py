@@ -80,7 +80,7 @@ class CurrentUser(object):
         Return a list of projects for which the user has this role.
         """
         return [
-            project for project, roles in self.projects.iteritems() if role in roles
+            project for project, roles in self.projects.items() if role in roles
         ]
 
 
