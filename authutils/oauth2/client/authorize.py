@@ -1,5 +1,4 @@
 from authlib.common.errors import AuthlibBaseError
-from authlib.oauth2.rfc6749.errors import OAuth2Error
 import flask
 from flask import current_app
 
@@ -24,5 +23,5 @@ def client_do_authorize():
         return token
     except KeyError as e:
         raise AuthError("error in token response: {}".format(token))
-    except (OAuth2Error, AuthlibBaseError) as e:
+    except AuthlibBaseError as e:
         raise AuthError(str(e))
