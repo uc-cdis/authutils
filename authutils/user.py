@@ -79,9 +79,7 @@ class CurrentUser(object):
         """
         Return a list of projects for which the user has this role.
         """
-        return [
-            project for project, roles in self.projects.items() if role in roles
-        ]
+        return [project for project, roles in self.projects.items() if role in roles]
 
 
 def set_global_user(**decorator_kwargs):
