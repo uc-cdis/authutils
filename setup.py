@@ -26,7 +26,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "addict~=2.1",
-        "Authlib~=0.4",
+        "Authlib~=0.11",
         "Flask>=0.10.1",
         "requests~=2.6",
         "python-keystoneclient~=1.8",
