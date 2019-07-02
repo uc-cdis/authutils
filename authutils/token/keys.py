@@ -87,7 +87,8 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
     path = "/".join(path.strip("/") for path in [user_api, "jwt", "keys"])
     jwt_public_keys = requests.get(path).json()["keys"]
     logger.info(
-        "refreshing public keys; updated to:\n" + json.dumps(jwt_public_keys, indent=4)
+        "refreshing public keys; updated to:\n"
+        + json.dumps(str(jwt_public_keys), indent=4)
     )
     flask.current_app.jwt_public_keys.update({user_api: OrderedDict(jwt_public_keys)})
 

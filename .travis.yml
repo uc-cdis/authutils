@@ -1,43 +1,27 @@
 language: python
-
 dist: xenial
-
 python:
-  - "2.7"
-  - "3.6"
-
+- '2.7'
+- '3.6'
 cache: pip
-
 matrix:
   allow_failures:
-    - python: "3.6"
-
+  - python: '2.7'
 env:
-  matrix:
-    - REPOSITORY="uc-cdis/authutils" PR_NUMBER="$TRAVIS_PULL_REQUEST"
   global:
-    secure: PzJ7tPAYCMbkQL5mAz+fcvtLvalosz9mebsncpCfXZviTXMp4UYqJfDdnO+plaqKTMoXDu7G8eNUIMCEOzPnu55jsbCl295kVuHsV0pbKwvvoT0wmeKCbVSKqgfLah8WDPa/h3qf2lksYNdQT+1auvz3ZHwxKfDdymYaxltw3nDQ0N+4gcmUT2ehCr74eaaxuxU/f3C32m141O5/GAHHZxdA2o00iJ1VwDVkf95qAHN8oxAYJ49xibUU69ho/+u+Tx8MC1VpPriz/9rGB002dV94qmHI7lTz4Ns9utO6XZ1xElAKPyCB10leic1qMOGoSGAsk32VlaJ8zHhqN30UTPc9P6/oEEbtNVI73/uzBDfpnydA7iHfH47dcQlSpfrNThnmCQzeL5pxfHbt4a/xpt/qIDbBin0fexuHSlomp/fNB2EFvGIzJutMOolIt+Sh32Kw0ntn15+W+JZn4kvN8us8qtRCoUOHoobKkNbzQ7FbDbmFxhDDRLAU/fcxwpOWUteJAXMah+XqsPSrwjUVtiqxrVCr9D4UMgdjY+pJ0B2GFKUXNU8KGpW6qEXmf2cjq7+Zv5JfNPjqFs3KeHNYKRIHkCJI/AyvUiyvCuxUsJkLDar9WQOsWRKhGxQQ4RZLp0gitNlrVctYXxJz1rQznhH+6zTzgxY57lmvlpwdUCs=
-
-# GITHUB_TOKEN environment variable required by `wool` is already in travis
-
+    secure: Y5j85mZkKueWncA78MCDBDdzp8gKrK+WUU7YCmzfUWIgyqgwgrEAZRe7urojiX/+7iwa9MZA8H9xwNNt9ERAkyizEwMPfeU12mGlj2PCwTRfK2AwGwtdzvsBgxDmmCk1BxtvKXjIvx68XYOT1GAX1n3eyv9H+wD0ljB6tMYUxubNKbJ/fn8eGB3EVksHRb/lwOcLQUmQGJhUSF4oBq6mMZyQjBlKvuVMzHLsYL/kOEu2eqpTPMVA8NGMrWyo4NGiqX7WWv/kncUmVz66uWBZsDVZ1rXKZfunRxpbgJlmHAAL7WakHhTnB3+nQx5KoBkEhk0feP7tpD1c/c3mz6xKjAsnDIa501WcyyOi/OGd8pjXa/kUv0A4qIS5fWVjCdpCKpq30NfGrkdD6CPrrFw/igr2y+EMicYDQ5gaXbuaaM12ctqYqh4kuHnKOIHuSdhHB1AbKpORfdEdTdD2Ufcdd7F1kWYZL1bFKqD4u6O57b58/nkstFAA2vyyvdXHm0oGzk076019gIWEwHzlmKjrzLXCpkVcdzarq9HJcAT+6Bvi+2eYOKjssA/NLHvETYlGis3n3FZcNnHLjfPBmFc+6xCFu7FMCibj0II5NwDugup968Xp0dxbhAlP0UFCrS4V/hHvnd9TmCLZUp/HGOmRsKwsubykqXyYYKvr5CGMCDs=
 install:
-  - pip uninstall -y userdatamodel || true
-  - pip install pipenv
-  - pipenv install --dev --deploy
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install -e git+https://git@github.com/uc-cdis/wool.git#egg=wool; fi
-
+- pip uninstall -y userdatamodel || true
+- pip install pipenv
+- pipenv install --dev --deploy
 script:
-  - pipenv run py.test -vv --cov=authutils --cov-report xml tests
-
+- pipenv run py.test -vv --cov=authutils --cov-report xml tests
 after_script:
-  - python-codacy-coverage -r coverage.xml
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then wool; fi
-
+- python-codacy-coverage -r coverage.xml
 before_deploy:
-  - sed -i.bak "s/=get_version()/='$TRAVIS_TAG'/g" setup.py
-  - cat setup.py
-  - if [ $(python setup.py --version) == '0.0.0' ]; then travis_terminate 1; fi
-
+- sed -i.bak "s/=get_version()/='$TRAVIS_TAG'/g" setup.py
+- cat setup.py
+- if [ $(python setup.py --version) == '0.0.0' ]; then travis_terminate 1; fi
 deploy:
   provider: pypi
   user: uc-ctds
@@ -47,6 +31,5 @@ deploy:
     tags: true
   password:
     secure: hvwCa8dDh4bpBDXghJcVnONBGGtF9nl/d+y37EI9pUzuTRkBLe+CaRkOnoiB6s+TzvcSmoxDpCsd2QlR3ZKZudmSoScBhoaEq5uheoK9/tstgubsXokC6gThXmrcmxRn3VzovvQ31SdDb/aKyGYnkTdR2wxS9KNnun4QkHETPsBUz+alASj8UTEw8k+7e5Zhq4xEs5AJ2YXu2PPKZatvMMFIQzvc3A2I65M2yu+tUtxGdna5/TAzh1vMfwaIOxb+Cp+2ALuZscot5NpHZl1KM3sNNEFN6Ys929GQNXSxKXSv7V/zywvuyGi7O5bU3VArvnLKXSk/+33c8L++If+Y2SKwPExQOvawytwM2vjmtu0EAqc96G8vBPF+Yoo2ZbuvdIOwJJQ0GTvL6LZvdoO/zK/D9QyQRyFUbC0UeiXy/qtj22ehuExNS/OlT4hgcsX1+nVrlw+tclGhGM4TNXkTXeqXF84M3eIEvtovj6GQ6SBVOCNqjao4IVvXa/OtinvD9J4/Xk7rGNm/JJiq/zl5xzj09nS3z4Re/3FGYw2AxA4/D1Jvs8jCR8dSWL63Jjr2T9GyOgluWIw8tnu2p0YTxiBE3Tx2+TXNvFsGg/m8lM9NIiuMM3riF1XGfkCFGLdhfuziFaygZAzkm50LxjTc3vw9mlu2k0wvP985mrV3zr4=
-
 after_deploy:
-  - "./release_notes.sh"
+- "./release_notes.sh"

@@ -210,7 +210,7 @@ def validate_jwt(
                 issuers.append(value)
     if public_key is None:
         public_key = get_public_key_for_token(
-            encoded_token, attempt_refresh=attempt_refresh, logger=logger,
+            encoded_token, attempt_refresh=attempt_refresh, logger=logger
         )
     if not aud:
         raise ValueError("must provide at least one audience")
