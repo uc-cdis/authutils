@@ -31,6 +31,7 @@ import httpx
 
 
 from authutils.errors import JWTError
+from .core import get_keys_url, get_kid, get_iss
 
 
 def refresh_jwt_public_keys(user_api=None, logger=None):
@@ -84,7 +85,7 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
     user_api = user_api or flask.current_app.config.get("USER_API")
     if not user_api:
         raise ValueError("no URL(s) provided for user API")
-    path = "/".join(path.strip("/") for path in [user_api, "jwt", "keys"])
+    path = get_keys_url(user_api)
     jwt_public_keys = httpx.get(path).json()["keys"]
     logger.info(
         "refreshing public keys; updated to:\n"
@@ -163,17 +164,11 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True, logger=None):
         str: public RSA key for token verification
     """
     logger = logger or get_logger(__name__, log_level="info")
-    try:
-        kid = jwt.get_unverified_header(encoded_token).get("kid")
-    except jwt.InvalidTokenError as e:
-        raise JWTError(e)
+    kid = get_kid(encoded_token)
 
     force_issuer = flask.current_app.config.get("FORCE_ISSUER")
     if force_issuer:
         iss = flask.current_app.config["USER_API"]
     else:
-        try:
-            iss = jwt.decode(encoded_token, verify=False).get("iss")
-        except jwt.InvalidTokenError as e:
-            raise JWTError(e)
+        iss = get_iss(encoded_token)
     return get_public_key(kid, iss=iss, attempt_refresh=attempt_refresh, logger=logger)
