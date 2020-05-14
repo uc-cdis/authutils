@@ -27,7 +27,7 @@ import json
 from cdislogging import get_logger
 import flask
 import jwt
-import requests
+import httpx
 
 
 from authutils.errors import JWTError
@@ -85,7 +85,7 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
     if not user_api:
         raise ValueError("no URL(s) provided for user API")
     path = "/".join(path.strip("/") for path in [user_api, "jwt", "keys"])
-    jwt_public_keys = requests.get(path).json()["keys"]
+    jwt_public_keys = httpx.get(path).json()["keys"]
     logger.info(
         "refreshing public keys; updated to:\n"
         + json.dumps(str(jwt_public_keys), indent=4)

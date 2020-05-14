@@ -1,5 +1,9 @@
 from authutils.errors import AuthError
-from authutils.user import CurrentUser, set_global_user
+
+try:
+    from authutils.user import CurrentUser, set_global_user
+except ImportError:
+    CurrentUser = set_global_user = None
 
 __all__ = ["AuthError", "CurrentUser", "ROLES", "set_global_user"]
 

@@ -1,7 +1,6 @@
 import functools
 import json
 
-from addict import Dict
 from cached_property import cached_property
 from cdiserrors import AuthZError
 import flask

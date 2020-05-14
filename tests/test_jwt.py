@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 import flask
 import pytest
-import requests
+import httpx
 
 from authutils.errors import JWTError, JWTAudienceError, JWTExpiredError
 from authutils.testing.fixtures import (
@@ -76,7 +76,7 @@ def test_get_public_key(app, example_keys_response, mock_get):
     iss = app.config["USER_API"]
     expected_jwt_public_keys_dict = {iss: OrderedDict(example_keys_response["keys"])}
     key = get_public_key(kid=test_kid)
-    requests.get.assert_called_once()
+    httpx.get.assert_called_once()
     assert key
     assert key == expected_key
     assert app.jwt_public_keys == expected_jwt_public_keys_dict
