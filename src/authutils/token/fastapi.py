@@ -24,11 +24,14 @@ def access_token(*audiences, issuer=None, allowed_issuers=None, purpose=None):
         def whoami(token=Depends(access_token("user", "openapi", purpose="access"))):
             return token["iss"]
 
-    :param audiences: Required, all must occur in ``aud``.
-    :param issuer: Force to use this issuer to validate the token if provided.
-    :param allowed_issuers: Optional allowed issuers whitelist, default: allow all.
-    :param purpose: Optional, must match ``pur`` if provided.
-    :return: Decoded JWT claims as a :class:`dict`.
+    Args:
+        *audiences: Required, all must occur in ``aud``.
+        issuer: Force to use this issuer to validate the token if provided.
+        allowed_issuers: Optional allowed issuers whitelist, default: allow all.
+        purpose: Optional, must match ``pur`` if provided.
+
+    Returns:
+        Decoded JWT claims as a :class:`dict`.
     """
 
     if not audiences:
