@@ -3,7 +3,7 @@
 Defines functionality to check case existence in dbGaP.
 """
 
-import requests
+import httpx
 import re
 
 import xmltodict
@@ -92,7 +92,8 @@ class dbGaPXReferencer(object):
             self.logger.info("Pulling telemetry report from {0}".format(url))
 
             # Request the XML
-            r = requests.get(url, proxies=self.proxies)
+            with httpx.Client(proxies=self.proxies) as client:
+                r = client.get(url)
             if r.status_code != 200:
                 msg = (
                     "Unable to cross reference cases with dbGaP. "
@@ -213,7 +214,8 @@ class dbGaPXReferencer(object):
         self.logger.info("Pulling telemetry report from {0}".format(url))
 
         # Request the XML
-        r = requests.get(url, proxies=self.proxies)
+        with httpx.Client(proxies=self.proxies) as client:
+            r = client.get(url)
         if r.status_code == 400:
             msg = "Project appears not to exist in dbGaP."
             raise UserError(msg)

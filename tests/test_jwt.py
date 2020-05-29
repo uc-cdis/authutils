@@ -4,17 +4,12 @@ from collections import OrderedDict
 
 import flask
 import pytest
-import requests
+import httpx
 
 from authutils.errors import JWTError, JWTAudienceError, JWTExpiredError
-from authutils.testing.fixtures import (
-    _hazmat_rsa_private_key,
-    _hazmat_rsa_private_key_2,
-    rsa_public_key,
-    rsa_public_key_2,
-)
 from authutils.token.keys import get_public_key
-from authutils.token.validate import _validate_jwt, require_auth_header
+from authutils.token.core import validate_jwt
+from authutils.token.validate import require_auth_header
 
 from tests.utils import TEST_RESPONSE_JSON
 
@@ -24,7 +19,7 @@ def test_valid_signature(claims, encoded_jwt, rsa_public_key, default_audiences,
     Do a basic test of the expected functionality with the sample payload in
     the fence README.
     """
-    decoded_token = _validate_jwt(encoded_jwt, rsa_public_key, default_audiences, [iss])
+    decoded_token = validate_jwt(encoded_jwt, rsa_public_key, default_audiences, [iss])
     assert decoded_token
     assert decoded_token == claims
 
@@ -33,7 +28,7 @@ def test_expired_token_rejected(
     encoded_jwt_expired, rsa_public_key, default_audiences, iss
 ):
     with pytest.raises(JWTExpiredError):
-        _validate_jwt(encoded_jwt_expired, rsa_public_key, default_audiences, [iss])
+        validate_jwt(encoded_jwt_expired, rsa_public_key, default_audiences, [iss])
 
 
 def test_invalid_signature_rejected(
@@ -44,7 +39,7 @@ def test_invalid_signature_rejected(
     corresponding to the public key it is given.
     """
     with pytest.raises(JWTError):
-        _validate_jwt(encoded_jwt, rsa_public_key_2, default_audiences, [iss])
+        validate_jwt(encoded_jwt, rsa_public_key_2, default_audiences, [iss])
 
 
 def test_invalid_aud_rejected(encoded_jwt, rsa_public_key, iss):
@@ -53,7 +48,7 @@ def test_invalid_aud_rejected(encoded_jwt, rsa_public_key, iss):
     appear in the token, a ``JWTAudienceError`` is raised.
     """
     with pytest.raises(JWTAudienceError):
-        _validate_jwt(encoded_jwt, rsa_public_key, {"not-in-aud"}, [iss])
+        validate_jwt(encoded_jwt, rsa_public_key, {"not-in-aud"}, [iss])
 
 
 def test_invalid_iss_rejected(encoded_jwt, rsa_public_key, iss):
@@ -63,7 +58,7 @@ def test_invalid_iss_rejected(encoded_jwt, rsa_public_key, iss):
     """
     wrong_iss = iss + "garbage"
     with pytest.raises(JWTError):
-        _validate_jwt(encoded_jwt, rsa_public_key, {"not-in-aud"}, [wrong_iss])
+        validate_jwt(encoded_jwt, rsa_public_key, {"not-in-aud"}, [wrong_iss])
 
 
 def test_get_public_key(app, example_keys_response, mock_get):
@@ -76,7 +71,7 @@ def test_get_public_key(app, example_keys_response, mock_get):
     iss = app.config["USER_API"]
     expected_jwt_public_keys_dict = {iss: OrderedDict(example_keys_response["keys"])}
     key = get_public_key(kid=test_kid)
-    requests.get.assert_called_once()
+    httpx.get.assert_called_once()
     assert key
     assert key == expected_key
     assert app.jwt_public_keys == expected_jwt_public_keys_dict

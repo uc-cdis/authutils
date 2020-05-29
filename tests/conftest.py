@@ -11,7 +11,7 @@ import flask
 import jwt
 import mock
 import pytest
-import requests
+import httpx
 
 from authutils.testing.fixtures import (
     _hazmat_rsa_private_key,
@@ -161,9 +161,9 @@ def app():
 def mock_get(monkeypatch, example_keys_response):
     """
     Provide a function to patch the value of the JSON returned by
-    ``requests.get``.
+    ``httpx.get``.
 
-    (NOTE that this only patches what will return from ``requests.get`` so if
+    (NOTE that this only patches what will return from ``httpx.get`` so if
     the implementation of ``refresh_jwt_public_keys`` is changed to use a
     different method to access the fence endpoint, this should be updated.)
 
@@ -172,7 +172,7 @@ def mock_get(monkeypatch, example_keys_response):
 
     Return:
         Calllable[dict, None]:
-            function which sets the reponse JSON of ``requests.get``
+            function which sets the reponse JSON of ``httpx.get``
     """
 
     def do_patch(urls_to_responses=None):
@@ -184,7 +184,7 @@ def mock_get(monkeypatch, example_keys_response):
             None
 
         Side Effects:
-            Patch ``requests.get``
+            Patch ``httpx.get``
         """
         urls_to_responses = urls_to_responses or {}
         defaults = {KEYS_URL: example_keys_response}
@@ -193,10 +193,58 @@ def mock_get(monkeypatch, example_keys_response):
 
         def get(url):
             """Define a mock ``get`` function to return a mocked response."""
-            mocked_response = mock.MagicMock(requests.Response)
+            mocked_response = mock.MagicMock(httpx.Response)
             mocked_response.json.return_value = urls_to_responses[url]
             return mocked_response
 
-        monkeypatch.setattr("requests.get", mock.MagicMock(side_effect=get))
+        monkeypatch.setattr("httpx.get", mock.MagicMock(side_effect=get))
+
+    return do_patch
+
+
+@pytest.fixture(scope="function")
+def mock_async_get(monkeypatch, example_keys_response):
+    """
+    Provide a function to patch the value of the JSON returned by
+    ``httpx.get``.
+
+    (NOTE that this only patches what will return from ``httpx.get`` so if
+    the implementation of ``refresh_jwt_public_keys`` is changed to use a
+    different method to access the fence endpoint, this should be updated.)
+
+    Args:
+        monkeypatch (pytest.monkeypatch.MonkeyPatch): fixture
+
+    Return:
+        Calllable[dict, None]:
+            function which sets the reponse JSON of ``httpx.get``
+    """
+
+    def do_patch(urls_to_responses=None):
+        """
+        Args:
+            keys_response_json (dict): value to set /jwt/keys return value to
+
+        Return:
+            None
+
+        Side Effects:
+            Patch ``httpx.get``
+        """
+        urls_to_responses = urls_to_responses or {}
+        defaults = {KEYS_URL: example_keys_response}
+        defaults.update(urls_to_responses)
+        urls_to_responses = defaults
+
+        async def get(url):
+            """Define a mock ``get`` function to return a mocked response."""
+            mocked_response = mock.MagicMock(httpx.Response)
+            if url in urls_to_responses:
+                mocked_response.json.return_value = urls_to_responses[url]
+            else:
+                mocked_response.raise_for_status.side_effect = Exception
+            return mocked_response
+
+        monkeypatch.setattr("httpx.AsyncClient.get", mock.MagicMock(side_effect=get))
 
     return do_patch

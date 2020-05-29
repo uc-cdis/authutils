@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "authutils"
+version = "5.0.0-beta.1"
+description = "Gen3 auth utility functions"
+authors = ["CTDS UChicago <cdis@uchicago.edu>"]
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+cached-property = "~=1.4"
+cdiserrors = "~=0.1"
+xmltodict = "~=0.9"
+
+authlib = "~=0.11"
+httpx = "^0.12.1"
+pyjwt = {version = "~=1.5", extras = ["crypto"]}
+
+Flask = {version = ">=0.10.1", optional = true}
+fastapi = {version = "^0.54.1", optional = true}
+
+[tool.poetry.extras]
+flask = ["Flask"]
+fastapi = ["fastapi"]
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.4.2"
+mock = "^4.0.2"
+pytest-cov = "^2.8.1"
+pytest-flask = "~=0.10"
+requests = "^2.23.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
