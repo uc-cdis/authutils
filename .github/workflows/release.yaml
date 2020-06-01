@@ -18,7 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GEN3_GITHUB_TOKEN }}"
       - name: fix remote
-        run: git remote set-url origin https://github.com/uc-cdis/pelican.git
+        run: git remote set-url origin https://github.com/uc-cdis/authutils.git
       - name: switch to master branch
         run: git checkout master
       - name: Bump release version
