@@ -27,7 +27,7 @@ description = "The ultimate Python library in building OAuth and OpenID Connect 
 name = "authlib"
 optional = false
 python-versions = "*"
-version = "0.14.2"
+version = "0.14.3"
 
 [package.dependencies]
 cryptography = "*"
@@ -45,16 +45,17 @@ version = "1.5.1"
 
 [[package]]
 category = "main"
-description = "The auth system for the gdcapi."
+description = "Gen3 shared exceptions and utilities."
 name = "cdiserrors"
 optional = false
-python-versions = "*"
-version = "0.1.2"
+python-versions = ">=3.6,<4.0"
+version = "1.0.0"
 
 [package.dependencies]
-Flask = "*"
-Werkzeug = "*"
-cdislogging = ">=0.0.2"
+cdislogging = ">=1.0.0,<2.0.0"
+
+[package.extras]
+flask = ["Flask (>=1.1.2,<2.0.0)"]
 
 [[package]]
 category = "main"
@@ -165,7 +166,7 @@ description = "FastAPI framework, high performance, easy to learn, fast to code,
 name = "fastapi"
 optional = true
 python-versions = ">=3.6"
-version = "0.54.1"
+version = "0.54.2"
 
 [package.dependencies]
 pydantic = ">=0.32.2,<2.0.0"
@@ -230,7 +231,7 @@ description = "Chromium HSTS Preload list as a Python package and updated daily"
 name = "hstspreload"
 optional = false
 python-versions = ">=3.6"
-version = "2020.5.13"
+version = "2020.5.30"
 
 [[package]]
 category = "main"
@@ -274,7 +275,7 @@ marker = "python_version < \"3.7\""
 name = "immutables"
 optional = false
 python-versions = ">=3.5"
-version = "0.13"
+version = "0.14"
 
 [[package]]
 category = "dev"
@@ -341,7 +342,7 @@ description = "More routines for operating on iterables, beyond itertools"
 name = "more-itertools"
 optional = false
 python-versions = ">=3.5"
-version = "8.2.0"
+version = "8.3.0"
 
 [[package]]
 category = "dev"
@@ -349,7 +350,7 @@ description = "Core utilities for Python packages"
 name = "packaging"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "20.3"
+version = "20.4"
 
 [package.dependencies]
 pyparsing = ">=2.0.2"
@@ -462,15 +463,15 @@ category = "dev"
 description = "Pytest plugin for measuring coverage."
 name = "pytest-cov"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "2.8.1"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "2.9.0"
 
 [package.dependencies]
 coverage = ">=4.4"
 pytest = ">=3.6"
 
 [package.extras]
-testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "virtualenv"]
+testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "pytest-xdist", "virtualenv"]
 
 [[package]]
 category = "dev"
@@ -523,7 +524,7 @@ description = "Python 2 and 3 compatibility utilities"
 name = "six"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
-version = "1.14.0"
+version = "1.15.0"
 
 [[package]]
 category = "main"
@@ -608,7 +609,7 @@ fastapi = ["fastapi"]
 flask = ["Flask"]
 
 [metadata]
-content-hash = "d5228c515258930d15595ad89eeada00947aeda1c523809510789fda7389e4f6"
+content-hash = "eca68711f4c2475f63aa987f54d3508132e4abae8bcf86996517ac25508d9006"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -621,15 +622,16 @@ attrs = [
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
 ]
 authlib = [
-    {file = "Authlib-0.14.2-py2.py3-none-any.whl", hash = "sha256:f07f373fd08994a1638f8f09ffc09d4f13c5eab4d070c5c9307745fb178a65ec"},
-    {file = "Authlib-0.14.2.tar.gz", hash = "sha256:94958661bd9e1c236a43719f00c5e6da2b7a773bd7350961be9fd9f3298da658"},
+    {file = "Authlib-0.14.3-py2.py3-none-any.whl", hash = "sha256:270e778201590af8873cf7d5e8e8ca5b625a16f7afba6a4280b6fb4efdd791bf"},
+    {file = "Authlib-0.14.3.tar.gz", hash = "sha256:cc52908e9e996f3de2ac2f61bf1ee6c6f1c5ce8e67c89ff2ca473008fffc92f6"},
 ]
 cached-property = [
     {file = "cached-property-1.5.1.tar.gz", hash = "sha256:9217a59f14a5682da7c4b8829deadbfc194ac22e9908ccf7c8820234e80a1504"},
     {file = "cached_property-1.5.1-py2.py3-none-any.whl", hash = "sha256:3a026f1a54135677e7da5ce819b0c690f156f37976f3e30c5430740725203d7f"},
 ]
 cdiserrors = [
-    {file = "cdiserrors-0.1.2.tar.gz", hash = "sha256:d6a91162aa76c7af37b79a8bba1bc5ebd06beb331ac522d36a74c4b300f6f333"},
+    {file = "cdiserrors-1.0.0-py3-none-any.whl", hash = "sha256:2e188645832e8c98468267af3e54bc5d3a298078b9869899256251e54dc1599d"},
+    {file = "cdiserrors-1.0.0.tar.gz", hash = "sha256:d6e56b0a9f6cc0104f4344f837b735fefb2caf8d0c4ef50569881dc140ebfc4a"},
 ]
 cdislogging = [
     {file = "cdislogging-1.0.0.tar.gz", hash = "sha256:a1cc2e48d5fc26d4b354b80c6497f1f1136f3e3e4f1d1855de8980ccf497fa0a"},
@@ -742,8 +744,8 @@ dataclasses = [
     {file = "dataclasses-0.6.tar.gz", hash = "sha256:6988bd2b895eef432d562370bb707d540f32f7360ab13da45340101bc2307d84"},
 ]
 fastapi = [
-    {file = "fastapi-0.54.1-py3-none-any.whl", hash = "sha256:1ee9a49f28d510b62b3b51a9452b274853bfc9c5d4b947ed054366e2d49f9efa"},
-    {file = "fastapi-0.54.1.tar.gz", hash = "sha256:72f40f47e5235cb5cbbad1d4f97932ede6059290c07e12e9784028dcd1063d28"},
+    {file = "fastapi-0.54.2-py3-none-any.whl", hash = "sha256:c8651f8316956240c2ffe5bc05c334c8359a3887e642720a9b23319c51e82907"},
+    {file = "fastapi-0.54.2.tar.gz", hash = "sha256:fff1b4a7fdf4812abb4507fb7aa30ef4206a0435839626ebe3b2871ec9aa367f"},
 ]
 flask = [
     {file = "Flask-1.1.2-py2.py3-none-any.whl", hash = "sha256:8a4fdd8936eba2512e9c85df320a37e694c93945b33ef33c89946a340a238557"},
@@ -762,8 +764,8 @@ hpack = [
     {file = "hpack-3.0.0.tar.gz", hash = "sha256:8eec9c1f4bfae3408a3f30500261f7e6a65912dc138526ea054f9ad98892e9d2"},
 ]
 hstspreload = [
-    {file = "hstspreload-2020.5.13-py3-none-any.whl", hash = "sha256:feb5275ca52f76bf3c15725115e96351e6c58519fb1ae794815d172fbc611649"},
-    {file = "hstspreload-2020.5.13.tar.gz", hash = "sha256:0cad9cfe67d461444b63a504afcde7be303741d57e3039295ec25db10d0c102a"},
+    {file = "hstspreload-2020.5.30-py3-none-any.whl", hash = "sha256:2b59a47bda0d06833e7df5eaf6063a0d420ee9368b98ba7a2c617f66d50d7641"},
+    {file = "hstspreload-2020.5.30.tar.gz", hash = "sha256:d44cb7a113806e55f6e08f1dfac0254f1db2933989172fa481e59470c47340f3"},
 ]
 httpx = [
     {file = "httpx-0.12.1-py3-none-any.whl", hash = "sha256:ce51c8e8ed2834447fde5a94650299fd74017b7da69cc786b6421fefda09a393"},
@@ -778,18 +780,18 @@ idna = [
     {file = "idna-2.9.tar.gz", hash = "sha256:7588d1c14ae4c77d74036e8c22ff447b26d0fde8f007354fd48a7814db15b7cb"},
 ]
 immutables = [
-    {file = "immutables-0.13-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:2227d9dcfd287842d518a3f818ad898fe516e0db940302d8fb44ec6e07361e77"},
-    {file = "immutables-0.13-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:a44c8b35070ad8359f122a34894aee70e5d0bfa16781ad17e55de0ba75d8c7c4"},
-    {file = "immutables-0.13-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:5c9c9948452a786129e906cfb6a0130ce2495b2d2d8c1104899042bef4992bd1"},
-    {file = "immutables-0.13-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:bcb7eb785219547321cac69e23ef888e2b5cafdbb77fada3afa918db1b161b58"},
-    {file = "immutables-0.13-cp36-cp36m-win_amd64.whl", hash = "sha256:30b2c8da82830c87133e0324bd7cd5143bf27ff78765deac9483b1a16722f953"},
-    {file = "immutables-0.13-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:db768133ecde071e9985fcc0c0863d7f1cce1ecf1ec454eac0f208ee535f1803"},
-    {file = "immutables-0.13-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:109da7ced28ee2d20f6cac2590f71210450c684c7eb85615402a03678e58148c"},
-    {file = "immutables-0.13-cp37-cp37m-win_amd64.whl", hash = "sha256:539a018c8ad8b726ad857b7dd2697975f6db5e032584d8be8d0880dc0b5de50c"},
-    {file = "immutables-0.13-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:29025229e5e10ea61c217b6b40d07bae753b67c00784252617e32afe9324800d"},
-    {file = "immutables-0.13-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:b88f6445f22780c2a7b3fcd5f400fc56f7e1bda1585f81919e5cb79f66b1cf09"},
-    {file = "immutables-0.13-cp38-cp38-win_amd64.whl", hash = "sha256:4975915b7850e48fde29a153e04e1c3943b0950e7b54143f0ae25a5d88eb46d3"},
-    {file = "immutables-0.13.tar.gz", hash = "sha256:e897851cd4307d51324d4c445c42b51f7bdb6a478a3555df7a9ff4ca60728da9"},
+    {file = "immutables-0.14-cp35-cp35m-macosx_10_14_x86_64.whl", hash = "sha256:860666fab142401a5535bf65cbd607b46bc5ed25b9d1eb053ca8ed9a1a1a80d6"},
+    {file = "immutables-0.14-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:ce01788878827c3f0331c254a4ad8d9721489a5e65cc43e19c80040b46e0d297"},
+    {file = "immutables-0.14-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:8797eed4042f4626b0bc04d9cf134208918eb0c937a8193a2c66df5041e62d2e"},
+    {file = "immutables-0.14-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:33ce2f977da7b5e0dddd93744862404bdb316ffe5853ec853e53141508fa2e6a"},
+    {file = "immutables-0.14-cp36-cp36m-win_amd64.whl", hash = "sha256:6c8eace4d98988c72bcb37c05e79aae756832738305ae9497670482a82db08bc"},
+    {file = "immutables-0.14-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:ab6c18b7b2b2abc83e0edc57b0a38bf0915b271582a1eb8c7bed1c20398f8040"},
+    {file = "immutables-0.14-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:c099212fd6504513a50e7369fe281007c820cf9d7bb22a336486c63d77d6f0b2"},
+    {file = "immutables-0.14-cp37-cp37m-win_amd64.whl", hash = "sha256:714aedbdeba4439d91cb5e5735cb10631fc47a7a69ea9cc8ecbac90322d50a4a"},
+    {file = "immutables-0.14-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:1c11050c49e193a1ec9dda1747285333f6ba6a30bbeb2929000b9b1192097ec0"},
+    {file = "immutables-0.14-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:c453e12b95e1d6bb4909e8743f88b7f5c0c97b86a8bc0d73507091cb644e3c1e"},
+    {file = "immutables-0.14-cp38-cp38-win_amd64.whl", hash = "sha256:ef9da20ec0f1c5853b5c8f8e3d9e1e15b8d98c259de4b7515d789a606af8745e"},
+    {file = "immutables-0.14.tar.gz", hash = "sha256:a0a1cc238b678455145bae291d8426f732f5255537ed6a5b7645949704c70a78"},
 ]
 importlib-metadata = [
     {file = "importlib_metadata-1.6.0-py2.py3-none-any.whl", hash = "sha256:2a688cbaa90e0cc587f1df48bdc97a6eadccdcd9c35fb3f976a09e3b5016d90f"},
@@ -838,12 +840,12 @@ mock = [
     {file = "mock-4.0.2.tar.gz", hash = "sha256:dd33eb70232b6118298d516bbcecd26704689c386594f0f3c4f13867b2c56f72"},
 ]
 more-itertools = [
-    {file = "more-itertools-8.2.0.tar.gz", hash = "sha256:b1ddb932186d8a6ac451e1d95844b382f55e12686d51ca0c68b6f61f2ab7a507"},
-    {file = "more_itertools-8.2.0-py3-none-any.whl", hash = "sha256:5dd8bcf33e5f9513ffa06d5ad33d78f31e1931ac9a18f33d37e77a180d393a7c"},
+    {file = "more-itertools-8.3.0.tar.gz", hash = "sha256:558bb897a2232f5e4f8e2399089e35aecb746e1f9191b6584a151647e89267be"},
+    {file = "more_itertools-8.3.0-py3-none-any.whl", hash = "sha256:7818f596b1e87be009031c7653d01acc46ed422e6656b394b0f765ce66ed4982"},
 ]
 packaging = [
-    {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},
-    {file = "packaging-20.3.tar.gz", hash = "sha256:3c292b474fda1671ec57d46d739d072bfd495a4f51ad01a055121d81e952b7a3"},
+    {file = "packaging-20.4-py2.py3-none-any.whl", hash = "sha256:998416ba6962ae7fbd6596850b80e17859a5753ba17c32284f67bfff33784181"},
+    {file = "packaging-20.4.tar.gz", hash = "sha256:4357f74f47b9c12db93624a82154e9b120fa8293699949152b22065d556079f8"},
 ]
 pluggy = [
     {file = "pluggy-0.13.1-py2.py3-none-any.whl", hash = "sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d"},
@@ -889,8 +891,8 @@ pytest = [
     {file = "pytest-5.4.2.tar.gz", hash = "sha256:eb2b5e935f6a019317e455b6da83dd8650ac9ffd2ee73a7b657a30873d67a698"},
 ]
 pytest-cov = [
-    {file = "pytest-cov-2.8.1.tar.gz", hash = "sha256:cc6742d8bac45070217169f5f72ceee1e0e55b0221f54bcf24845972d3a47f2b"},
-    {file = "pytest_cov-2.8.1-py2.py3-none-any.whl", hash = "sha256:cdbdef4f870408ebdbfeb44e63e07eb18bb4619fae852f6e760645fa36172626"},
+    {file = "pytest-cov-2.9.0.tar.gz", hash = "sha256:b6a814b8ed6247bd81ff47f038511b57fe1ce7f4cc25b9106f1a4b106f1d9322"},
+    {file = "pytest_cov-2.9.0-py2.py3-none-any.whl", hash = "sha256:c87dfd8465d865655a8213859f1b4749b43448b5fae465cb981e16d52a811424"},
 ]
 pytest-flask = [
     {file = "pytest-flask-0.15.1.tar.gz", hash = "sha256:cbd8c5b9f8f1b83e9c159ac4294964807c4934317a5fba181739ac15e1b823e6"},
@@ -905,8 +907,8 @@ rfc3986 = [
     {file = "rfc3986-1.4.0.tar.gz", hash = "sha256:112398da31a3344dc25dbf477d8df6cb34f9278a94fee2625d89e4514be8bb9d"},
 ]
 six = [
-    {file = "six-1.14.0-py2.py3-none-any.whl", hash = "sha256:8f3cd2e254d8f793e7f3d6d9df77b92252b52637291d0f0da013c76ea2724b6c"},
-    {file = "six-1.14.0.tar.gz", hash = "sha256:236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a"},
+    {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},
+    {file = "six-1.15.0.tar.gz", hash = "sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259"},
 ]
 sniffio = [
     {file = "sniffio-1.1.0-py3-none-any.whl", hash = "sha256:20ed6d5b46f8ae136d00b9dcb807615d83ed82ceea6b2058cecb696765246da5"},
