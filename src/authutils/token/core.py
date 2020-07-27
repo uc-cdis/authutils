@@ -1,3 +1,4 @@
+import httpx
 import jwt
 
 from ..errors import (
@@ -10,6 +11,10 @@ from ..errors import (
 
 
 def get_keys_url(issuer):
+    openid_cfg_path = "/".join([issuer.strip("/"), ".well-known", "openid-configuration"])
+    jwks_uri = httpx.get(openid_cfg_path).json().get("jwks_uri", "")
+    if jwks_uri:
+        return jwks_uri
     return "/".join([issuer.strip("/"), "jwt", "keys"])
 
 
