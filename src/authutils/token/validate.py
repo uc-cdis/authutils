@@ -67,7 +67,8 @@ def get_session_token():
 
 def validate_jwt(
     encoded_token,
-    aud,
+    aud=None,
+    scope=None,
     purpose="access",
     issuers=None,
     public_key=None,
@@ -79,20 +80,25 @@ def validate_jwt(
 
     Args:
         encoded_token (str): the base64 encoding of the token
-        aud (Optional[Iterable[str]]):
-            list of audiences that the token must satisfy; defaults to
-            ``{'openid'}`` (minimum expected by OpenID provider)
+        aud (Optional[str]):
+          audience with which the app identifies, usually an OIDC
+          client id, which the JWT will be expected to include in its ``aud``
+          claim. Optional; if no ``aud`` argument given and the JWT has no
+          ``aud`` claim, validation will pass.
+        scope (Optional[Iterable[str]]):
+            scopes that the token must satisfy
         purpose (Optional[str]):
             which purpose the token is supposed to be used for (access,
             refresh, or id)
         issuers (Iterable[str]): list of allowed token issuers
         public_key (Optional[str]): public key to vaidate JWT with
+        attempt_refresh (Optional[bool]):
+            whether to attempt refresh of public keys if not found in cache
 
     Return:
         dict: dictionary of claims from the validated JWT
 
     Raises:
-        ValueError: if ``aud`` is empty
         JWTError:
             if auth header is missing, decoding fails, or the JWT fails to
             satisfy any expectation
@@ -108,10 +114,8 @@ def validate_jwt(
         public_key = get_public_key_for_token(
             encoded_token, attempt_refresh=attempt_refresh, logger=logger
         )
-    if not aud:
-        raise ValueError("must provide at least one audience")
-    aud = set(aud)
-    claims = core.validate_jwt(encoded_token, public_key, aud, issuers)
+
+    claims = core.validate_jwt(encoded_token, public_key, aud, scope, issuers)
     if purpose:
         core.validate_purpose(claims, purpose)
     return claims
