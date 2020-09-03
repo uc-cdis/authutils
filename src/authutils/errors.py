@@ -24,3 +24,8 @@ class JWTPurposeError(JWTError):
 class JWTAudienceError(JWTError):
 
     pass
+
+
+class JWTScopeError(JWTError):
+
+    pass
