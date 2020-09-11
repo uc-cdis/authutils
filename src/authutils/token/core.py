@@ -47,7 +47,7 @@ def validate_purpose(claims, pur):
         )
 
 
-def validate_jwt(encoded_token, public_key, aud, scope, issuers):
+def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
     """
     Validate the encoded JWT ``encoded_token``, which must satisfy the
     scopes ``scope``.
@@ -77,6 +77,7 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers):
           set of scopes, each of which the JWT must satisfy in its
           ``scope`` claim. Optional.
         issuers (list or set): allowed issuers whitelist
+        options (Optional[dict]): options to pass through to pyjwt's decode
 
     Return:
         dict: the decoded and validated JWT
@@ -99,7 +100,7 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers):
 
     try:
         token = jwt.decode(
-            encoded_token, key=public_key, algorithms=["RS256"], audience=aud,
+            encoded_token, key=public_key, algorithms=["RS256"], audience=aud, options=options,
         )
     except jwt.InvalidAudienceError as e:
         raise JWTAudienceError(e)

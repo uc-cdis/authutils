@@ -74,6 +74,7 @@ def validate_jwt(
     public_key=None,
     attempt_refresh=True,
     logger=None,
+    options={},
 ):
     """
     Validate a JWT and return the claims.
@@ -94,6 +95,7 @@ def validate_jwt(
         public_key (Optional[str]): public key to vaidate JWT with
         attempt_refresh (Optional[bool]):
             whether to attempt refresh of public keys if not found in cache
+        options (Optional[dict]): options to pass through to pyjwt's decode
 
     Return:
         dict: dictionary of claims from the validated JWT
@@ -115,7 +117,7 @@ def validate_jwt(
             encoded_token, attempt_refresh=attempt_refresh, logger=logger
         )
 
-    claims = core.validate_jwt(encoded_token, public_key, aud, scope, issuers)
+    claims = core.validate_jwt(encoded_token, public_key, aud, scope, issuers, options)
     if purpose:
         core.validate_purpose(claims, purpose)
     return claims
