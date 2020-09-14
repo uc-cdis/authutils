@@ -123,7 +123,7 @@ def validate_jwt(
     return claims
 
 
-def validate_request(aud, purpose="access", logger=None):
+def validate_request(scope, purpose="access", logger=None):
     """
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
@@ -138,13 +138,13 @@ def validate_request(aud, purpose="access", logger=None):
         raise JWTError("no authorization header provided")
 
     # Pass token to ``validate_jwt``.
-    return validate_jwt(encoded_token, aud, purpose, logger=logger)
+    return validate_jwt(encoded_token, scope=scope, purpose=purpose, logger=logger)
 
 
-def require_auth_header(aud, purpose=None, logger=None):
+def require_auth_header(scope, purpose=None, logger=None):
     """
     Return a decorator which adds request validation to check the given
-    audiences and (optionally) purpose.
+    scopes and (optionally) purpose.
     """
     logger = logger or get_logger(__name__, log_level="info")
 
@@ -162,7 +162,7 @@ def require_auth_header(aud, purpose=None, logger=None):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            set_current_token(validate_request(aud=aud, purpose=purpose, logger=logger))
+            set_current_token(validate_request(scope=scope, purpose=purpose, logger=logger))
             return f(*args, **kwargs)
 
         return wrapper
