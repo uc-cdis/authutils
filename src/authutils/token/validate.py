@@ -127,6 +127,8 @@ def validate_request(scope, purpose="access", logger=None):
     """
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
+    SKIPS aud validation: See "Not validating aud claim in Bearer tokens" in the
+    Fence repo's TECHDEBT file.
     """
     logger = logger or get_logger(__name__, log_level="info")
     # Get token from the headers.
@@ -138,13 +140,15 @@ def validate_request(scope, purpose="access", logger=None):
         raise JWTError("no authorization header provided")
 
     # Pass token to ``validate_jwt``.
-    return validate_jwt(encoded_token, scope=scope, purpose=purpose, logger=logger)
+    return validate_jwt(encoded_token, scope=scope, purpose=purpose, logger=logger, options={'verify_aud': False})
 
 
 def require_auth_header(scope, purpose=None, logger=None):
     """
     Return a decorator which adds request validation to check the given
     scopes and (optionally) purpose.
+    SKIPS aud validation (via validate-request): See "Not validating
+    aud claim in Bearer tokens" in the Fence repo's TECHDEBT file.
     """
     logger = logger or get_logger(__name__, log_level="info")
 
