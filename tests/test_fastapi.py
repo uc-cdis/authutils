@@ -42,8 +42,8 @@ def async_client(default_scopes, mock_async_get, iss):
         yield client
 
 
-def test_no_audience():
-    with pytest.raises(ValueError, match="audiences"):
+def test_no_scopes():
+    with pytest.raises(ValueError, match="scopes"):
         access_token()
 
 

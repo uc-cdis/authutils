@@ -14,7 +14,7 @@ bearer = HTTPBearer()
 _jwt_public_keys = {}
 
 
-def access_token(*audiences, issuer=None, allowed_issuers=None, purpose=None):
+def access_token(*scopes, issuer=None, allowed_issuers=None, purpose=None):
     """
     Validate and return the JWT bearer token in HTTP header::
 
@@ -25,7 +25,7 @@ def access_token(*audiences, issuer=None, allowed_issuers=None, purpose=None):
             return token["iss"]
 
     Args:
-        *audiences: Required, all must occur in ``aud``.
+        *scopes: Required, all must occur in ``scope``.
         issuer: Force to use this issuer to validate the token if provided.
         allowed_issuers: Optional allowed issuers whitelist, default: allow all.
         purpose: Optional, must match ``pur`` if provided.
@@ -34,9 +34,9 @@ def access_token(*audiences, issuer=None, allowed_issuers=None, purpose=None):
         Decoded JWT claims as a :class:`dict`.
     """
 
-    if not audiences:
-        raise ValueError("Missing parameter: audiences")
-    audiences = set(audiences)
+    if not scopes:
+        raise ValueError("Missing parameter: scopes")
+    scopes = set(scopes)
     if not allowed_issuers and issuer:
         allowed_issuers = [issuer]
 
@@ -93,7 +93,7 @@ def access_token(*audiences, issuer=None, allowed_issuers=None, purpose=None):
         # decode and validate the token
         try:
             claims = await loop.run_in_executor(
-                None, core.validate_jwt, token, pub_key, audiences, allowed_issuers
+                None, core.validate_jwt, token, pub_key, None, scopes, allowed_issuers
             )
 
             if purpose:
