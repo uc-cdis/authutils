@@ -38,17 +38,17 @@ def iss():
 
 
 @pytest.fixture(scope="session")
-def default_audiences():
+def default_scopes():
     """
-    Return some default audiences to put in the claims of a JWT.
+    Return some default scopes to put in the claims of a JWT.
     """
-    # Note that ``test_aud`` here is the audience expected on the test endpoint
+    # Note that ``test_scope`` here is the scope expected on the test endpoint
     # in the test application.
-    return ["openid", "access", "user", "test_aud"]
+    return ["openid", "access", "user", "test_scope"]
 
 
 @pytest.fixture(scope="session")
-def claims(default_audiences, iss):
+def claims(default_scopes, iss):
     """
     Return some generic claims to put in a JWT.
 
@@ -60,12 +60,12 @@ def claims(default_audiences, iss):
     exp = int((now + timedelta(seconds=600)).strftime("%s"))
     return {
         "pur": "access",
-        "aud": default_audiences,
         "sub": "1234",
         "iss": iss,
         "iat": iat,
         "exp": exp,
         "jti": str(uuid.uuid4()),
+        "scope": default_scopes,
         "context": {"user": {"name": "test-user", "projects": []}},
     }
 
@@ -143,7 +143,7 @@ def app():
     app.config["USER_API"] = USER_API
 
     @app.route("/test")
-    @require_auth_header({"test_aud"}, "access")
+    @require_auth_header({"test_scope"}, "access")
     def test_endpoint():
         """
         Define a simple endpoint for testing which requires a JWT header for

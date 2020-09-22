@@ -14,32 +14,32 @@ from authutils.token.validate import require_auth_header
 from tests.utils import TEST_RESPONSE_JSON
 
 
-def test_valid_signature(claims, encoded_jwt, rsa_public_key, default_audiences, iss):
+def test_valid_signature(claims, encoded_jwt, rsa_public_key, default_scopes, iss):
     """
     Do a basic test of the expected functionality with the sample payload in
     the fence README.
     """
-    decoded_token = validate_jwt(encoded_jwt, rsa_public_key, default_audiences, [iss])
+    decoded_token = validate_jwt(encoded_jwt, rsa_public_key, default_scopes, [iss])
     assert decoded_token
     assert decoded_token == claims
 
 
 def test_expired_token_rejected(
-    encoded_jwt_expired, rsa_public_key, default_audiences, iss
+    encoded_jwt_expired, rsa_public_key, default_scopes, iss
 ):
     with pytest.raises(JWTExpiredError):
-        validate_jwt(encoded_jwt_expired, rsa_public_key, default_audiences, [iss])
+        validate_jwt(encoded_jwt_expired, rsa_public_key, default_scopes, [iss])
 
 
 def test_invalid_signature_rejected(
-    encoded_jwt, rsa_public_key_2, default_audiences, iss
+    encoded_jwt, rsa_public_key_2, default_scopes, iss
 ):
     """
     Test that ``validate_jwt`` rejects JWTs signed with a private key not
     corresponding to the public key it is given.
     """
     with pytest.raises(JWTError):
-        validate_jwt(encoded_jwt, rsa_public_key_2, default_audiences, [iss])
+        validate_jwt(encoded_jwt, rsa_public_key_2, default_scopes, [iss])
 
 
 def test_invalid_aud_rejected(encoded_jwt, rsa_public_key, iss):
