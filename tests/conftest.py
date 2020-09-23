@@ -38,6 +38,13 @@ def iss():
 
 
 @pytest.fixture(scope="session")
+def default_audiences():
+    """
+    Return default audiences to pass to core.validate_jwt calls.
+    """
+    return None
+
+@pytest.fixture(scope="session")
 def default_scopes():
     """
     Return some default scopes to put in the claims of a JWT.
