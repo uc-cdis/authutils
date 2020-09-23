@@ -44,6 +44,7 @@ def default_audiences():
     """
     return None
 
+
 @pytest.fixture(scope="session")
 def default_scopes():
     """

@@ -1,6 +1,12 @@
 import jwt
 
-from ..errors import JWTAudienceError, JWTExpiredError, JWTPurposeError, JWTScopeError, JWTError
+from ..errors import (
+    JWTAudienceError,
+    JWTExpiredError,
+    JWTPurposeError,
+    JWTScopeError,
+    JWTError,
+)
 
 
 def get_keys_url(issuer):
@@ -92,15 +98,31 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
 
     # Typecheck arguments.
     if not isinstance(aud, str) and not aud is None:
-        raise ValueError("aud must be string or None. Instead received aud of type {}".format(type(aud)))
+        raise ValueError(
+            "aud must be string or None. Instead received aud of type {}".format(
+                type(aud)
+            )
+        )
     if not isinstance(scope, set) and not isinstance(scope, list) and not scope is None:
-        raise ValueError("scope must be set or list or None. Instead received scope of type {}".format(type(scope)))
+        raise ValueError(
+            "scope must be set or list or None. Instead received scope of type {}".format(
+                type(scope)
+            )
+        )
     if not isinstance(issuers, set) and not isinstance(issuers, list):
-        raise ValueError("issuers must be set or list. Instead received issuers of type {}".format(type(issuers)))
+        raise ValueError(
+            "issuers must be set or list. Instead received issuers of type {}".format(
+                type(issuers)
+            )
+        )
 
     try:
         token = jwt.decode(
-            encoded_token, key=public_key, algorithms=["RS256"], audience=aud, options=options,
+            encoded_token,
+            key=public_key,
+            algorithms=["RS256"],
+            audience=aud,
+            options=options,
         )
     except jwt.InvalidAudienceError as e:
         raise JWTAudienceError(e)
@@ -125,9 +147,15 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
         if isinstance(token_scopes, str):
             token_scopes = [token_scopes]
         if not isinstance(token_scopes, list):
-            raise JWTError("invalid format in scope claim: {}; expected list".format(token["scopes"]))
+            raise JWTError(
+                "invalid format in scope claim: {}; expected list".format(
+                    token["scopes"]
+                )
+            )
         missing_scopes = set(scope) - set(token_scopes)
         if missing_scopes:
-            raise JWTScopeError("token is missing required scopes: " + str(missing_scopes))
+            raise JWTScopeError(
+                "token is missing required scopes: " + str(missing_scopes)
+            )
 
     return token

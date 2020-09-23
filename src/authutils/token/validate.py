@@ -140,7 +140,13 @@ def validate_request(scope, purpose="access", logger=None):
         raise JWTError("no authorization header provided")
 
     # Pass token to ``validate_jwt``.
-    return validate_jwt(encoded_token, scope=scope, purpose=purpose, logger=logger, options={'verify_aud': False})
+    return validate_jwt(
+        encoded_token,
+        scope=scope,
+        purpose=purpose,
+        logger=logger,
+        options={"verify_aud": False},
+    )
 
 
 def require_auth_header(scope, purpose=None, logger=None):
@@ -166,7 +172,9 @@ def require_auth_header(scope, purpose=None, logger=None):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            set_current_token(validate_request(scope=scope, purpose=purpose, logger=logger))
+            set_current_token(
+                validate_request(scope=scope, purpose=purpose, logger=logger)
+            )
             return f(*args, **kwargs)
 
         return wrapper
