@@ -41,8 +41,8 @@ class CurrentUser(object):
 
     def __init__(self, claims=None, jwt_kwargs=None):
         jwt_kwargs = jwt_kwargs or {}
-        if "aud" not in jwt_kwargs:
-            jwt_kwargs["aud"] = {"openid"}
+        if "scope" not in jwt_kwargs:
+            jwt_kwargs["scope"] = {"openid"}
         self._claims = claims or validate_request(**jwt_kwargs)
         self.id = self._claims["sub"]
         self.username = self._get_user_info("name")
