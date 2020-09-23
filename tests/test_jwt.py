@@ -75,6 +75,19 @@ def test_unexpected_aud_rejected(claims, token_headers, rsa_private_key, rsa_pub
         validate_jwt(encoded_token, rsa_public_key, default_audiences, default_scopes, [iss])
 
 
+def test_valid_aud_accepted(claims, token_headers, rsa_private_key, rsa_public_key, default_scopes, iss):
+    """
+    Test that if the token contains multiple audience values in its ``aud`` claim
+    and one of those values is passed to ``validate_jwt`` then validation passes.
+    """
+    claims = claims.copy()
+    claims["aud"] = ["foo", "bar", "baz"]
+    encoded_token = jwt.encode(
+        claims,  headers=token_headers, key=rsa_private_key, algorithm="RS256"
+    )
+    validate_jwt(encoded_token, rsa_public_key, "baz", default_scopes, [iss])
+
+
 def test_invalid_iss_rejected(encoded_jwt, rsa_public_key, default_audiences, default_scopes, iss):
     """
     Test that if ``validate_jwt`` receives a token whose value for ``iss``
