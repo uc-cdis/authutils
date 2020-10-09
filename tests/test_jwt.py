@@ -80,7 +80,6 @@ def test_unexpected_aud_rejected(
     token_headers,
     rsa_private_key,
     rsa_public_key,
-    default_audiences,
     default_scopes,
     iss,
 ):
@@ -94,9 +93,7 @@ def test_unexpected_aud_rejected(
         claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
     )
     with pytest.raises(JWTAudienceError):
-        validate_jwt(
-            encoded_token, rsa_public_key, default_audiences, default_scopes, [iss]
-        )
+        validate_jwt(encoded_token, rsa_public_key, None, default_scopes, [iss])
 
 
 def test_valid_aud_accepted(
