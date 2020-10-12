@@ -76,9 +76,7 @@ def test_missing_aud_rejected(encoded_jwt, rsa_public_key, default_scopes, iss):
 
 
 def test_unexpected_aud_rejected(
-    claims,
-    token_headers,
-    rsa_private_key,
+    encoded_jwt,
     rsa_public_key,
     default_scopes,
     iss,
@@ -87,13 +85,8 @@ def test_unexpected_aud_rejected(
     Test that if the token contains an ``aud`` claim and no ``aud`` arg is passed
     to ``validate_jwt``, a ``JWTAudienceError`` is raised.
     """
-    claims = claims.copy()
-    claims["aud"] = "garbage-aud"
-    encoded_token = jwt.encode(
-        claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
-    )
     with pytest.raises(JWTAudienceError):
-        validate_jwt(encoded_token, rsa_public_key, None, default_scopes, [iss])
+        validate_jwt(encoded_jwt, rsa_public_key, None, default_scopes, [iss])
 
 
 def test_valid_aud_accepted(

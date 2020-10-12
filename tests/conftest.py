@@ -40,9 +40,9 @@ def iss():
 @pytest.fixture(scope="session")
 def default_audiences():
     """
-    Return default audiences to pass to core.validate_jwt calls.
+    Return default audience to pass to core.validate_jwt calls.
     """
-    return None
+    return USER_API
 
 
 @pytest.fixture(scope="session")
@@ -70,6 +70,7 @@ def claims(default_scopes, iss):
         "pur": "access",
         "sub": "1234",
         "iss": iss,
+        "aud": iss,
         "iat": iat,
         "exp": exp,
         "jti": str(uuid.uuid4()),
