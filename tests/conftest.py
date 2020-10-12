@@ -148,7 +148,9 @@ def app():
     """
     app = flask.Flask(__name__)
     app.debug = True
+    # Gen3 services use both USER_API and BASE_URL
     app.config["USER_API"] = USER_API
+    app.config["BASE_URL"] = USER_API
 
     @app.route("/test")
     @require_auth_header({"test_scope"}, "access")
