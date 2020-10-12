@@ -13,13 +13,17 @@ def async_client(default_scopes, mock_async_get, iss):
     app = fastapi.FastAPI()
 
     @app.get("/whoami")
-    def whoami(token=fastapi.Depends(access_token(*default_scopes, purpose="access"))):
+    def whoami(
+        token=fastapi.Depends(
+            access_token(*default_scopes, audience=iss, purpose="access")
+        )
+    ):
         return token
 
     @app.get("/force_issuer")
     def force_issuer(
         token=fastapi.Depends(
-            access_token(*default_scopes, issuer=iss, purpose="access")
+            access_token(*default_scopes, audience=iss, issuer=iss, purpose="access")
         )
     ):
         return token

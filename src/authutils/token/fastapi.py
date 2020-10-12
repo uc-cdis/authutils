@@ -14,7 +14,9 @@ bearer = HTTPBearer()
 _jwt_public_keys = {}
 
 
-def access_token(*scopes, issuer=None, allowed_issuers=None, purpose=None):
+def access_token(
+    *scopes, audience=None, issuer=None, allowed_issuers=None, purpose=None
+):
     """
     Validate and return the JWT bearer token in HTTP header::
 
@@ -93,7 +95,13 @@ def access_token(*scopes, issuer=None, allowed_issuers=None, purpose=None):
         # decode and validate the token
         try:
             claims = await loop.run_in_executor(
-                None, core.validate_jwt, token, pub_key, None, scopes, allowed_issuers
+                None,
+                core.validate_jwt,
+                token,
+                pub_key,
+                audience,
+                scopes,
+                allowed_issuers,
             )
 
             if purpose:
