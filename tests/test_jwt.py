@@ -171,7 +171,9 @@ def test_validate_request_jwt_bad_header(client, mock_get, encoded_jwt):
         client.get("/test", headers=incorrect_headers)
 
 
-def test_validate_request_jwt_missing_all_scopes(app, client, auth_header, mock_get):
+def test_validate_request_jwt_missing_all_scopes(
+    app, client, auth_header, default_audiences, mock_get
+):
     """
     Test that if the JWT is completely missing a scope which is required by
     an endpoint, a ``JWTScopeError`` is raised.
@@ -181,7 +183,7 @@ def test_validate_request_jwt_missing_all_scopes(app, client, auth_header, mock_
     # This should raise a JWTScopeError, since the scope it
     # requires does not appear in the default JWT anywhere.
     @app.route("/test_missing_scope")
-    @require_auth_header({"missing_scope"}, "access")
+    @require_auth_header({"missing_scope"}, default_audiences, "access")
     def bad():
         return flask.jsonify({"foo": "bar"})
 
@@ -189,7 +191,9 @@ def test_validate_request_jwt_missing_all_scopes(app, client, auth_header, mock_
         client.get("/test_missing_scope", headers=auth_header)
 
 
-def test_validate_request_jwt_missing_some_scopes(app, client, auth_header, mock_get):
+def test_validate_request_jwt_missing_some_scopes(
+    app, client, auth_header, default_audiences, mock_get
+):
     """
     Test that if the JWT satisfies some scopes but is missing at least one
     scope which is required by an endpoint, a ``JWTScopeError``
@@ -200,7 +204,7 @@ def test_validate_request_jwt_missing_some_scopes(app, client, auth_header, mock
     # This should raise JWTScopeError, since the scope it requires does
     # not appear in the default JWT anywhere.
     @app.route("/test_missing_scope")
-    @require_auth_header({"access", "missing_scope"}, "access")
+    @require_auth_header({"access", "missing_scope"}, default_audiences, "access")
     def bad():
         return flask.jsonify({"foo": "bar"})
 

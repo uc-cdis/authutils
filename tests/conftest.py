@@ -154,7 +154,7 @@ def app():
     app.config["BASE_URL"] = USER_API
 
     @app.route("/test")
-    @require_auth_header({"test_scope"}, "access")
+    @require_auth_header({"test_scope"}, USER_API, "access")
     def test_endpoint():
         """
         Define a simple endpoint for testing which requires a JWT header for

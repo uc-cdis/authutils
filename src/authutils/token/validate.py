@@ -134,7 +134,7 @@ def validate_jwt(
     return claims
 
 
-def validate_request(scope, purpose="access", logger=None):
+def validate_request(scope={}, audience=None, purpose="access", logger=None):
     """
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
@@ -151,13 +151,14 @@ def validate_request(scope, purpose="access", logger=None):
     # Pass token to ``validate_jwt``.
     return validate_jwt(
         encoded_token,
+        aud=audience,
         scope=scope,
         purpose=purpose,
         logger=logger,
     )
 
 
-def require_auth_header(scope, purpose=None, logger=None):
+def require_auth_header(scope={}, audience=None, purpose=None, logger=None):
     """
     Return a decorator which adds request validation to check the given
     scopes and (optionally) purpose.
@@ -179,7 +180,9 @@ def require_auth_header(scope, purpose=None, logger=None):
             token (see top of this file).
             """
             set_current_token(
-                validate_request(scope=scope, purpose=purpose, logger=logger)
+                validate_request(
+                    scope=scope, audience=audience, purpose=purpose, logger=logger
+                )
             )
             return f(*args, **kwargs)
 
