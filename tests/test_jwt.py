@@ -89,6 +89,26 @@ def test_unexpected_aud_rejected(
         validate_jwt(encoded_jwt, rsa_public_key, None, default_scopes, [iss])
 
 
+def test_expected_missing_aud_accepted(
+    claims,
+    token_headers,
+    rsa_private_key,
+    rsa_public_key,
+    default_scopes,
+    iss,
+):
+    """
+    Test that if no ``aud`` arg is passed to ``validate_jwt`` and the token does NOT
+    contain an ``aud`` claim then validation passes.
+    """
+    claims = claims.copy()
+    claims.pop("aud")
+    encoded_token = jwt.encode(
+        claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
+    )
+    validate_jwt(encoded_token, rsa_public_key, None, default_scopes, [iss])
+
+
 def test_valid_aud_accepted(
     claims, token_headers, rsa_private_key, rsa_public_key, default_scopes, iss
 ):
