@@ -38,7 +38,7 @@ def iss():
 
 
 @pytest.fixture(scope="session")
-def default_audiences():
+def default_audience():
     """
     Return default audience to pass to core.validate_jwt calls.
     """
