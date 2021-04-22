@@ -56,7 +56,7 @@ def default_scopes():
 
 
 @pytest.fixture(scope="session")
-def claims(default_scopes, iss):
+def claims(default_audience, default_scopes, iss):
     """
     Return some generic claims to put in a JWT.
 
@@ -70,7 +70,7 @@ def claims(default_scopes, iss):
         "pur": "access",
         "sub": "1234",
         "iss": iss,
-        "aud": iss,
+        "aud": default_audience,
         "iat": iat,
         "exp": exp,
         "jti": str(uuid.uuid4()),
