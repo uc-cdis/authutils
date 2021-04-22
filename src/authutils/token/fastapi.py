@@ -28,7 +28,10 @@ def access_token(
 
     Args:
         *scopes: Required, all must occur in ``scope``.
-        issuer: Force to use this issuer to validate the token if provided.
+        audience: Optional; if provided, JWT validation will require that the token's
+          ``aud`` value contains the arg value; if not provided, validation will require
+          that the token not have an aud field.
+        issuer: Optional; force to use this issuer to validate the token if provided.
         allowed_issuers: Optional allowed issuers whitelist, default: allow all.
         purpose: Optional, must match ``pur`` if provided.
 
