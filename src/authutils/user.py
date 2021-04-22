@@ -11,12 +11,17 @@ from authutils.token.validate import set_current_token, validate_request
 
 
 def set_current_user(**kwargs):
-    expected_audience = flask.current_app.config.get("USER_API")
+    default_expected_audience = flask.current_app.config.get("USER_API")
     # Gen3 services use both USER_API and BASE_URL
-    if not expected_audience:
-        expected_audience = flask.current_app.config.get("BASE_URL")
+    if not default_expected_audience:
+        default_expected_audience = flask.current_app.config.get("BASE_URL")
 
-    flask.g.user = CurrentUser(jwt_kwargs={"audience": expected_audience}, **kwargs)
+    # If not already passed an aud to expect, default to the application's url
+    kwargs.setdefault("jwt_kwargs", {}).setdefault(
+        "audience", default_expected_audience
+    )
+
+    flask.g.user = CurrentUser(**kwargs)
     set_current_token(flask.g.user._claims)
     return flask.g.user
 
