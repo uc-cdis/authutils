@@ -161,7 +161,7 @@ def validate_request(scope={}, audience=None, purpose="access", logger=None):
 def require_auth_header(scope={}, audience=None, purpose=None, logger=None):
     """
     Return a decorator which adds request validation to check the given
-    scopes and (optionally) purpose.
+    scopes, audience and purpose (all optional).
     """
     logger = logger or get_logger(__name__, log_level="info")
 
