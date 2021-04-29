@@ -38,17 +38,25 @@ def iss():
 
 
 @pytest.fixture(scope="session")
-def default_audiences():
+def default_audience():
     """
-    Return some default audiences to put in the claims of a JWT.
+    Return default audience to pass to core.validate_jwt calls.
     """
-    # Note that ``test_aud`` here is the audience expected on the test endpoint
-    # in the test application.
-    return ["openid", "access", "user", "test_aud"]
+    return USER_API
 
 
 @pytest.fixture(scope="session")
-def claims(default_audiences, iss):
+def default_scopes():
+    """
+    Return some default scopes to put in the claims of a JWT.
+    """
+    # Note that ``test_scope`` here is the scope expected on the test endpoint
+    # in the test application.
+    return ["openid", "access", "user", "test_scope"]
+
+
+@pytest.fixture(scope="session")
+def claims(default_audience, default_scopes, iss):
     """
     Return some generic claims to put in a JWT.
 
@@ -60,12 +68,13 @@ def claims(default_audiences, iss):
     exp = int((now + timedelta(seconds=600)).strftime("%s"))
     return {
         "pur": "access",
-        "aud": default_audiences,
         "sub": "1234",
         "iss": iss,
+        "aud": default_audience,
         "iat": iat,
         "exp": exp,
         "jti": str(uuid.uuid4()),
+        "scope": default_scopes,
         "context": {"user": {"name": "test-user", "projects": []}},
     }
 
@@ -140,10 +149,12 @@ def app():
     """
     app = flask.Flask(__name__)
     app.debug = True
+    # Gen3 services use both USER_API and BASE_URL
     app.config["USER_API"] = USER_API
+    app.config["BASE_URL"] = USER_API
 
     @app.route("/test")
-    @require_auth_header({"test_aud"}, "access")
+    @require_auth_header({"test_scope"}, USER_API, "access")
     def test_endpoint():
         """
         Define a simple endpoint for testing which requires a JWT header for

@@ -11,6 +11,16 @@ from authutils.token.validate import set_current_token, validate_request
 
 
 def set_current_user(**kwargs):
+    default_expected_audience = flask.current_app.config.get("USER_API")
+    # Gen3 services use both USER_API and BASE_URL
+    if not default_expected_audience:
+        default_expected_audience = flask.current_app.config.get("BASE_URL")
+
+    # If not already passed an aud to expect, default to the application's url
+    kwargs.setdefault("jwt_kwargs", {}).setdefault(
+        "audience", default_expected_audience
+    )
+
     flask.g.user = CurrentUser(**kwargs)
     set_current_token(flask.g.user._claims)
     return flask.g.user
@@ -41,8 +51,8 @@ class CurrentUser(object):
 
     def __init__(self, claims=None, jwt_kwargs=None):
         jwt_kwargs = jwt_kwargs or {}
-        if "aud" not in jwt_kwargs:
-            jwt_kwargs["aud"] = {"openid"}
+        if "scope" not in jwt_kwargs:
+            jwt_kwargs["scope"] = {"openid"}
         self._claims = claims or validate_request(**jwt_kwargs)
         self.id = self._claims["sub"]
         self.username = self._get_user_info("name")

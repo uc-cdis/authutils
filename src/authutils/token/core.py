@@ -1,6 +1,12 @@
 import jwt
 
-from ..errors import JWTAudienceError, JWTExpiredError, JWTPurposeError, JWTError
+from ..errors import (
+    JWTAudienceError,
+    JWTExpiredError,
+    JWTPurposeError,
+    JWTScopeError,
+    JWTError,
+)
 
 
 def get_keys_url(issuer):
@@ -47,50 +53,76 @@ def validate_purpose(claims, pur):
         )
 
 
-def validate_jwt(encoded_token, public_key, aud, issuers):
+def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
     """
     Validate the encoded JWT ``encoded_token``, which must satisfy the
-    audiences ``aud``.
+    scopes ``scope``.
 
     This is just a slightly lower-level function to decode the token and
     perform the most basic checks on the token.
 
     - Decode JWT using public key; PyJWT will fail if iat or exp fields are
       invalid
-    - Check audiences: token audiences must be a superset of required audiences
-      (the ``aud`` argument); fail if not satisfied
+    - PyJWT will also fail if the aud field is present in the JWT but no
+      ``aud`` arg is passed, or if the ``aud`` arg does not match one of
+      the items in the token aud field
+    - Check issuers: token iss field must match one of the items in the
+      ``issuers`` arg
+    - Check scopes: token scopes must be a superset of required scopes
+      (the ``scope`` argument); fail if not satisfied
 
     Args:
         encoded_token (str): encoded JWT
         public_key (str): public key to validate the JWT signature
-        aud (set): non-empty set of audiences the JWT must satisfy
+        aud (Optional[str]):
+          audience with which the app identifies, usually an OIDC
+          client id, which the JWT will be expected to include in its ``aud``
+          claim. Optional; if no ``aud`` argument given, then the JWT must
+          not have an ``aud`` claim, or validation will fail.
+        scope (Optional[Iterable[str]]):
+          set of scopes, each of which the JWT must satisfy in its
+          ``scope`` claim. Optional.
         issuers (list or set): allowed issuers whitelist
+        options (Optional[dict]): options to pass through to pyjwt's decode
 
     Return:
         dict: the decoded and validated JWT
 
     Raises:
         ValueError: if receiving an incorrectly-typed argument
-        JWTValidationError: if any step of the validation fails
+        JWTExpiredError: if token is expired
+        JWTAudienceError: if aud validation fails
+        JWTScopeError: if scope validation fails
+        JWTError: if some other token validation step fails
     """
-    # Typecheck arguments.
-    if not isinstance(aud, set) and not isinstance(aud, list):
-        raise ValueError("aud must be set or list")
-    if not isinstance(issuers, set) and not isinstance(issuers, list):
-        raise ValueError("issuers must be set or list")
 
-    # To satisfy PyJWT, since the token will contain an aud field, decode has
-    # to be passed one of the audiences to check here (so PyJWT doesn't raise
-    # an InvalidAudienceError). Per the JWT specification, if the token
-    # contains an aud field, the validator MUST identify with one of the
-    # audiences listed in that field. This implementation is more strict, and
-    # allows the validator to demand multiple audiences which must all be
-    # satisfied by the token (see below).
-    aud = set(aud)
-    random_aud = list(aud)[0]
+    # Typecheck arguments.
+    if not isinstance(aud, str) and not aud is None:
+        raise ValueError(
+            "aud must be string or None. Instead received aud of type {}".format(
+                type(aud)
+            )
+        )
+    if not isinstance(scope, set) and not isinstance(scope, list) and not scope is None:
+        raise ValueError(
+            "scope must be set or list or None. Instead received scope of type {}".format(
+                type(scope)
+            )
+        )
+    if not isinstance(issuers, set) and not isinstance(issuers, list):
+        raise ValueError(
+            "issuers must be set or list. Instead received issuers of type {}".format(
+                type(issuers)
+            )
+        )
+
     try:
         token = jwt.decode(
-            encoded_token, key=public_key, algorithms=["RS256"], audience=random_aud
+            encoded_token,
+            key=public_key,
+            algorithms=["RS256"],
+            audience=aud,
+            options=options,
         )
     except jwt.InvalidAudienceError as e:
         raise JWTAudienceError(e)
@@ -99,7 +131,7 @@ def validate_jwt(encoded_token, public_key, aud, issuers):
     except jwt.InvalidTokenError as e:
         raise JWTError(e)
 
-    # PyJWT validates iat and exp fields (and aud...sort of); everything else
+    # PyJWT validates iat, exp, and aud fields; everything else
     # must happen here.
 
     # iss
@@ -108,12 +140,22 @@ def validate_jwt(encoded_token, public_key, aud, issuers):
         msg = "invalid issuer {}; expected: {}".format(token["iss"], issuers)
         raise JWTError(msg)
 
-    # aud
-    # The audiences listed in the token must completely satisfy all the
-    # required audiences provided. Note that this is stricter than the
-    # specification suggested in RFC 7519.
-    missing = aud - set(token["aud"])
-    if missing:
-        raise JWTAudienceError("missing audiences: " + str(missing))
+    # scope
+    # Check that if scope arg was non-empty then the token includes each given scope in its scope claim
+    if scope:
+        token_scopes = token.get("scope", [])
+        if isinstance(token_scopes, str):
+            token_scopes = [token_scopes]
+        if not isinstance(token_scopes, list):
+            raise JWTError(
+                "invalid format in scope claim: {}; expected string or list".format(
+                    token["scopes"]
+                )
+            )
+        missing_scopes = set(scope) - set(token_scopes)
+        if missing_scopes:
+            raise JWTScopeError(
+                "token is missing required scopes: " + str(missing_scopes)
+            )
 
     return token
