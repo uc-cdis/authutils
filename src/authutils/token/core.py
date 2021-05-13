@@ -11,11 +11,12 @@ from ..errors import (
 
 
 def get_keys_url(issuer):
-    openid_cfg_path = "/".join([issuer.strip("/"), ".well-known", "openid-configuration"])
+    # Prefer OIDC discovery doc, but fall back on Fence-specific /jwt/keys for backwards compatibility
+    openid_cfg_path = "/".join(
+        [issuer.strip("/"), ".well-known", "openid-configuration"]
+    )
     jwks_uri = httpx.get(openid_cfg_path).json().get("jwks_uri", "")
-    if jwks_uri:
-        return jwks_uri
-    return "/".join([issuer.strip("/"), "jwt", "keys"])
+    return jwks_uri if jwks_uri else "/".join([issuer.strip("/"), "jwt", "keys"])
 
 
 def get_kid(encoded_token):
