@@ -98,7 +98,14 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
         raise ValueError("no URL(s) provided for user API")
 
     path = get_keys_url(user_api)
-    jwt_public_keys = httpx.get(path).json()["keys"]
+    try:
+        jwt_public_keys = httpx.get(path).json()["keys"]
+    except:
+        raise JWTError(
+            "Attempted to refresh public keys for {},"
+            "but could not get keys from path {}.".format(user_api, path)
+        )
+
     logger.info("Refreshing public key cache for issuer {}...".format(user_api))
     logger.debug(
         "Received public keys:\n{}".format(json.dumps(str(jwt_public_keys), indent=4))

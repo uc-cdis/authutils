@@ -15,8 +15,11 @@ def get_keys_url(issuer):
     openid_cfg_path = "/".join(
         [issuer.strip("/"), ".well-known", "openid-configuration"]
     )
-    jwks_uri = httpx.get(openid_cfg_path).json().get("jwks_uri", "")
-    return jwks_uri if jwks_uri else "/".join([issuer.strip("/"), "jwt", "keys"])
+    try:
+        jwks_uri = httpx.get(openid_cfg_path).json().get("jwks_uri", "")
+        return jwks_uri
+    except:
+        return "/".join([issuer.strip("/"), "jwt", "keys"])
 
 
 def get_kid(encoded_token):
