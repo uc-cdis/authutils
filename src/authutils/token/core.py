@@ -151,7 +151,7 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
     if scope:
         token_scopes = token.get("scope", [])
         if isinstance(token_scopes, str):
-            token_scopes = [token_scopes]
+            token_scopes = token_scopes.split()
         if not isinstance(token_scopes, list):
             raise JWTError(
                 "invalid format in scope claim: {}; expected string or list".format(
