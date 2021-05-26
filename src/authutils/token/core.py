@@ -1,3 +1,4 @@
+import httpx
 import jwt
 
 from ..errors import (
@@ -10,7 +11,15 @@ from ..errors import (
 
 
 def get_keys_url(issuer):
-    return "/".join([issuer.strip("/"), "jwt", "keys"])
+    # Prefer OIDC discovery doc, but fall back on Fence-specific /jwt/keys for backwards compatibility
+    openid_cfg_path = "/".join(
+        [issuer.strip("/"), ".well-known", "openid-configuration"]
+    )
+    try:
+        jwks_uri = httpx.get(openid_cfg_path).json().get("jwks_uri", "")
+        return jwks_uri
+    except:
+        return "/".join([issuer.strip("/"), "jwt", "keys"])
 
 
 def get_kid(encoded_token):
@@ -145,7 +154,7 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
     if scope:
         token_scopes = token.get("scope", [])
         if isinstance(token_scopes, str):
-            token_scopes = [token_scopes]
+            token_scopes = token_scopes.split()
         if not isinstance(token_scopes, list):
             raise JWTError(
                 "invalid format in scope claim: {}; expected string or list".format(

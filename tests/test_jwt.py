@@ -148,7 +148,9 @@ def test_get_public_key(app, example_keys_response, mock_get):
     iss = app.config["USER_API"]
     expected_jwt_public_keys_dict = {iss: OrderedDict(example_keys_response["keys"])}
     key = get_public_key(kid=test_kid)
-    httpx.get.assert_called_once()
+    # httpx.get should be called twice: once attempting to get the jwks_uri from
+    # .well-known/openid-configuration, another to actually hit the jwks_uri
+    assert httpx.get.call_count == 2
     assert key
     assert key == expected_key
     assert app.jwt_public_keys == expected_jwt_public_keys_dict
