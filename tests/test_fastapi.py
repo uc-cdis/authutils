@@ -73,7 +73,7 @@ def test_force_issuer_wrong_issuer(
     token = jwt.encode(
         claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
     )
-    encoded_jwt = token.decode("utf-8")
+    encoded_jwt = token
     headers = {"Authorization": "Bearer {}".format(encoded_jwt)}
     assert async_client.get("/force_issuer", headers=headers).status_code == 403
 
@@ -90,10 +90,9 @@ def test_bad_token(async_client, auth_header):
 def test_wrong_issuer(async_client, claims, token_headers, rsa_private_key):
     claims = claims.copy()
     claims["iss"] = "https://wrong.example.com"
-    token = jwt.encode(
+    encoded_jwt = jwt.encode(
         claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
     )
-    encoded_jwt = token.decode("utf-8")
     headers = {"Authorization": "Bearer {}".format(encoded_jwt)}
     assert async_client.get("/whoami", headers=headers).status_code == 403
 
@@ -101,10 +100,9 @@ def test_wrong_issuer(async_client, claims, token_headers, rsa_private_key):
 def test_wrong_kid(async_client, claims, token_headers, rsa_private_key):
     token_headers = token_headers.copy()
     token_headers["kid"] = "nonexist"
-    token = jwt.encode(
+    encoded_jwt = jwt.encode(
         claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
     )
-    encoded_jwt = token.decode("utf-8")
     headers = {"Authorization": "Bearer {}".format(encoded_jwt)}
     assert async_client.get("/whoami", headers=headers).status_code == 403
 

@@ -138,7 +138,7 @@ def auth_header(encoded_jwt):
     Return:
         List[Tuple[str, str]]: the authorization header
     """
-    encoded_jwt = encoded_jwt.decode("utf-8")
+    encoded_jwt = encoded_jwt
     return [("Authorization", "Bearer {}".format(encoded_jwt))]
 
 
