@@ -13,7 +13,7 @@ xmltodict = "~=0.9"
 
 authlib = "~=0.11"
 httpx = ">=0.12.1,<1.0.0"
-pyjwt = {version = "~=1.5", extras = ["crypto"]}
+pyjwt = {version = "^2.1.0", extras = ["crypto"]}
 
 Flask = {version = ">=0.10.1", optional = true}
 fastapi = {version = "^0.54.1", optional = true}
