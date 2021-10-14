@@ -142,7 +142,7 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache={}, logger=None):
             )
             issuer_public_keys[key[0]] = key[1]
 
-        pkey_cache.update({user_api: issuer_public_keys})
+    pkey_cache.update({user_api: issuer_public_keys})
 
     flask.current_app.jwt_public_keys.update({user_api: issuer_public_keys})
     logger.info("Done refreshing public key cache for issuer {}.".format(user_api))
