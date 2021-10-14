@@ -141,7 +141,7 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache={}, logger=None):
                 )
             )
             issuer_public_keys[key[0]] = key[1]
-        
+
         pkey_cache.update({user_api: issuer_public_keys})
 
     flask.current_app.jwt_public_keys.update({user_api: issuer_public_keys})
@@ -192,10 +192,11 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=No
         or flask.current_app.config["USER_API"]
     )
     logger = logger or get_logger(__name__, log_level="info")
-    need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
-        kid and kid not in flask.current_app.jwt_public_keys.get(iss, {})) or (
-            kid and kid not in pkey_cache.get(iss, {})
-        )
+    need_refresh = (
+        not hasattr(flask.current_app, "jwt_public_keys")
+        or (kid and kid not in flask.current_app.jwt_public_keys.get(iss, {}))
+        or (kid and kid not in pkey_cache.get(iss, {}))
+    )
     if need_refresh and attempt_refresh:
         refresh_jwt_public_keys(iss, pkey_cache, logger=logger)
     elif need_refresh and not attempt_refresh:
@@ -208,14 +209,20 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=No
     if iss not in flask.current_app.jwt_public_keys or iss not in pkey_cache:
         raise JWTError("Public key for issuer {} not found.".format(iss))
 
-    iss_public_keys = flask.current_app.jwt_public_keys[iss] if flask.has_app_context() else pkey_cache[iss]
+    iss_public_keys = (
+        flask.current_app.jwt_public_keys[iss]
+        if flask.has_app_context()
+        else pkey_cache[iss]
+    )
     try:
         return iss_public_keys[kid]
     except KeyError:
         raise JWTError("no key exists with given key id: {}".format(kid))
 
 
-def get_public_key_for_token(encoded_token, attempt_refresh=True, pkey_cache={}, logger=None):
+def get_public_key_for_token(
+    encoded_token, attempt_refresh=True, pkey_cache={}, logger=None
+):
     """
     Attempt to look up the public key which should be used to verify the token.
 
@@ -237,4 +244,10 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True, pkey_cache={},
         iss = flask.current_app.config["USER_API"]
     else:
         iss = get_iss(encoded_token)
-    return get_public_key(kid, iss=iss, attempt_refresh=attempt_refresh, pkey_cache=pkey_cache, logger=logger)
+    return get_public_key(
+        kid,
+        iss=iss,
+        attempt_refresh=attempt_refresh,
+        pkey_cache=pkey_cache,
+        logger=logger,
+    )
