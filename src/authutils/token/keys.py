@@ -194,8 +194,10 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=No
     logger = logger or get_logger(__name__, log_level="info")
     need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
         kid
-        and kid not in flask.current_app.jwt_public_keys.get(iss, {})
-        or (kid and kid not in pkey_cache.get(iss, {}))
+        and (
+            kid not in flask.current_app.jwt_public_keys.get(iss, {})
+            or (kid and kid not in pkey_cache.get(iss, {}))
+        )
     )
     if need_refresh and attempt_refresh:
         refresh_jwt_public_keys(iss, pkey_cache, logger=logger)
