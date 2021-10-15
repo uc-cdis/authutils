@@ -38,7 +38,7 @@ from authutils.errors import JWTError
 from .core import get_keys_url, get_kid, get_iss
 
 
-def refresh_jwt_public_keys(user_api=None, pkey_cache={}, logger=None):
+def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
     """
     Update the public keys that the Flask app is currently using to validate
     JWTs.
@@ -86,6 +86,8 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache={}, logger=None):
         ValueError: if user_api is not provided or set in app config
     """
     logger = logger or get_logger(__name__, log_level="info")
+    if not pkey_cache:
+        pkey_cache = {}
     # First, make sure the app has a ``jwt_public_keys`` attribute set up.
     missing_public_keys = (
         not hasattr(flask.current_app, "jwt_public_keys")
@@ -148,7 +150,7 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache={}, logger=None):
     logger.info("Done refreshing public key cache for issuer {}.".format(user_api))
 
 
-def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=None):
+def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache=None, logger=None):
     """
     Given a key id ``kid``, get the public key from the flask app belonging to
     this key id. The key id is allowed to be None, in which case, use the the
@@ -186,6 +188,9 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=No
             if the key id is provided and public key with that key id is found
     """
 
+    if not pkey_cache:
+        pkey_cache = {}
+
     iss = (
         iss
         or flask.current_app.config.get("OIDC_ISSUER")
@@ -196,7 +201,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=No
         kid
         and (
             kid not in flask.current_app.jwt_public_keys.get(iss, {})
-            or (kid and kid not in pkey_cache.get(iss, {}))
+            and kid not in pkey_cache.get(iss, {})
         )
     )
     if need_refresh and attempt_refresh:
@@ -208,7 +213,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=No
             )
         )
 
-    if iss not in flask.current_app.jwt_public_keys or iss not in pkey_cache:
+    if iss not in flask.current_app.jwt_public_keys and iss not in pkey_cache:
         raise JWTError("Public key for issuer {} not found.".format(iss))
 
     iss_public_keys = (
@@ -223,7 +228,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache={}, logger=No
 
 
 def get_public_key_for_token(
-    encoded_token, attempt_refresh=True, pkey_cache={}, logger=None
+    encoded_token, attempt_refresh=True, pkey_cache=None, logger=None
 ):
     """
     Attempt to look up the public key which should be used to verify the token.
