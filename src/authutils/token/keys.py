@@ -89,6 +89,8 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
     if pkey_cache is None:
         pkey_cache = {}
     # First, make sure the app has a ``jwt_public_keys`` attribute set up.
+    # This function is called both in application context and out of application context
+    # trying to run current_app when its out of application context terminates the code wherever current_app is called
     if flask.has_app_context():
         missing_public_keys = (
             not hasattr(flask.current_app, "jwt_public_keys")
@@ -96,6 +98,7 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
         )
         if missing_public_keys:
             flask.current_app.jwt_public_keys = {}
+
     user_api = user_api or flask.current_app.config.get("USER_API")
     if not user_api:
         raise ValueError("no URL(s) provided for user API")
@@ -145,11 +148,11 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
             )
             issuer_public_keys[key[0]] = key[1]
 
+    if flask.has_app_context():
+        flask.current_app.jwt_public_keys.update({user_api: issuer_public_keys})
+
     pkey_cache.update({user_api: issuer_public_keys})
 
-    flask.current_app.jwt_public_keys.update(
-        {user_api: issuer_public_keys}
-    ) if flask.has_app_context() else None
     logger.info("Done refreshing public key cache for issuer {}.".format(user_api))
 
 
@@ -207,6 +210,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache=None, logger=
         )
     else:
         need_refresh = kid and kid not in pkey_cache.get(iss, {})
+
     if need_refresh and attempt_refresh:
         refresh_jwt_public_keys(iss, pkey_cache, logger=logger)
     elif need_refresh and not attempt_refresh:
