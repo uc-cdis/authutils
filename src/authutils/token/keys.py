@@ -74,6 +74,8 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
             the flask app is configured to use
         logger (Optional[Logger]):
             the logger; default to app's parent logger
+        pkey_cache (Optional[dict]):
+            public key cache for in memory (out of context application)
 
     Return:
         None
@@ -99,7 +101,8 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
         if missing_public_keys:
             flask.current_app.jwt_public_keys = {}
 
-    user_api = user_api or flask.current_app.config.get("USER_API")
+    if flask.has_app_context():
+        user_api = flask.current_app.config.get("USER_API")
     if not user_api:
         raise ValueError("no URL(s) provided for user API")
 
@@ -212,7 +215,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache=None, logger=
         need_refresh = kid and kid not in pkey_cache.get(iss, {})
 
     if need_refresh and attempt_refresh:
-        refresh_jwt_public_keys(iss, pkey_cache, logger=logger)
+        refresh_jwt_public_keys(iss, pkey_cache=pkey_cache, logger=logger)
     elif need_refresh and not attempt_refresh:
         logger.warn(
             "Public key {} not cached, but application is not attempting refresh.".format(
