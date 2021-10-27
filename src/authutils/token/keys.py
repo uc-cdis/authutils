@@ -101,8 +101,11 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
         if missing_public_keys:
             flask.current_app.jwt_public_keys = {}
 
-    if flask.has_app_context():
-        user_api = flask.current_app.config.get("USER_API")
+    user_api = (
+        (user_api or flask.current_app.get("USER_API"))
+        if flask.has_app_context()
+        else user_api
+    )
     if not user_api:
         raise ValueError("no URL(s) provided for user API")
 
