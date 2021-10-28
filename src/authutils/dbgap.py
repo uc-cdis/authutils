@@ -27,9 +27,7 @@ class dbGaPXReferencer(object):
     )
 
     def __init__(self, db, logger=None, proxies={}):
-        """Instantiate a class to crossvalidate entity existence in dbGaP.
-
-        """
+        """Instantiate a class to crossvalidate entity existence in dbGaP."""
         self._cached_telemetry_xmls = {
             # "phsid": "telemetry xml"
         }
@@ -173,8 +171,7 @@ class dbGaPXReferencer(object):
         return project.sysan.get("dbgap_bypassed_cases") or []
 
     def get_registered_cases(self, project):
-        """Gets the submitter_id of all the cases in latest telemetry report.
-        """
+        """Gets the submitter_id of all the cases in latest telemetry report."""
         phsid = self.get_project_accession(project)
 
         # Pull the telemetry report for the project

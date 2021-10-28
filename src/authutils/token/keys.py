@@ -38,7 +38,7 @@ from authutils.errors import JWTError
 from .core import get_keys_url, get_kid, get_iss
 
 
-def refresh_jwt_public_keys(user_api=None, logger=None):
+def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
     """
     Update the public keys that the Flask app is currently using to validate
     JWTs.
@@ -74,6 +74,8 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
             the flask app is configured to use
         logger (Optional[Logger]):
             the logger; default to app's parent logger
+        pkey_cache (Optional[dict]):
+            public key cache for in memory (out of context application)
 
     Return:
         None
@@ -86,14 +88,24 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
         ValueError: if user_api is not provided or set in app config
     """
     logger = logger or get_logger(__name__, log_level="info")
+    if pkey_cache is None:
+        pkey_cache = {}
     # First, make sure the app has a ``jwt_public_keys`` attribute set up.
-    missing_public_keys = (
-        not hasattr(flask.current_app, "jwt_public_keys")
-        or not flask.current_app.jwt_public_keys
+    # This function is called both in application context and out of application context
+    # trying to run current_app when its out of application context terminates the code wherever current_app is called
+    if flask.has_app_context():
+        missing_public_keys = (
+            not hasattr(flask.current_app, "jwt_public_keys")
+            or not flask.current_app.jwt_public_keys
+        )
+        if missing_public_keys:
+            flask.current_app.jwt_public_keys = {}
+
+    user_api = (
+        (user_api or flask.current_app.get("USER_API"))
+        if flask.has_app_context()
+        else user_api
     )
-    if missing_public_keys:
-        flask.current_app.jwt_public_keys = {}
-    user_api = user_api or flask.current_app.config.get("USER_API")
     if not user_api:
         raise ValueError("no URL(s) provided for user API")
 
@@ -142,11 +154,15 @@ def refresh_jwt_public_keys(user_api=None, logger=None):
             )
             issuer_public_keys[key[0]] = key[1]
 
-    flask.current_app.jwt_public_keys.update({user_api: issuer_public_keys})
+    if flask.has_app_context():
+        flask.current_app.jwt_public_keys.update({user_api: issuer_public_keys})
+
+    pkey_cache.update({user_api: issuer_public_keys})
+
     logger.info("Done refreshing public key cache for issuer {}.".format(user_api))
 
 
-def get_public_key(kid, iss=None, attempt_refresh=True, logger=None):
+def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache=None, logger=None):
     """
     Given a key id ``kid``, get the public key from the flask app belonging to
     this key id. The key id is allowed to be None, in which case, use the the
@@ -168,6 +184,8 @@ def get_public_key(kid, iss=None, attempt_refresh=True, logger=None):
             encountering a key id that does not exist in those keys; for fence
             itself this should be ``False``, and for other services it should
             be ``True``
+        pkey_cache (dict): also store pkey_cache in memory for cases where this function is used out of application context
+            Used specifically for the Visa Update Cronjob (Access Token Polling)
 
     Return:
         str: the public key
@@ -182,17 +200,25 @@ def get_public_key(kid, iss=None, attempt_refresh=True, logger=None):
             if the key id is provided and public key with that key id is found
     """
 
+    if pkey_cache is None:
+        pkey_cache = {}
+
     iss = (
         iss
         or flask.current_app.config.get("OIDC_ISSUER")
         or flask.current_app.config["USER_API"]
     )
     logger = logger or get_logger(__name__, log_level="info")
-    need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
-        kid and kid not in flask.current_app.jwt_public_keys.get(iss, {})
-    )
+
+    if flask.has_app_context():
+        need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
+            kid and kid not in flask.current_app.jwt_public_keys.get(iss, {})
+        )
+    else:
+        need_refresh = kid and kid not in pkey_cache.get(iss, {})
+
     if need_refresh and attempt_refresh:
-        refresh_jwt_public_keys(iss, logger=logger)
+        refresh_jwt_public_keys(iss, pkey_cache=pkey_cache, logger=logger)
     elif need_refresh and not attempt_refresh:
         logger.warn(
             "Public key {} not cached, but application is not attempting refresh.".format(
@@ -200,17 +226,25 @@ def get_public_key(kid, iss=None, attempt_refresh=True, logger=None):
             )
         )
 
-    if iss not in flask.current_app.jwt_public_keys:
+    if (
+        flask.has_app_context() and iss not in flask.current_app.jwt_public_keys
+    ) and iss not in pkey_cache:
         raise JWTError("Public key for issuer {} not found.".format(iss))
 
-    iss_public_keys = flask.current_app.jwt_public_keys[iss]
+    iss_public_keys = (
+        flask.current_app.jwt_public_keys[iss]
+        if flask.has_app_context()
+        else pkey_cache[iss]
+    )
     try:
         return iss_public_keys[kid]
     except KeyError:
         raise JWTError("no key exists with given key id: {}".format(kid))
 
 
-def get_public_key_for_token(encoded_token, attempt_refresh=True, logger=None):
+def get_public_key_for_token(
+    encoded_token, attempt_refresh=True, pkey_cache=None, logger=None
+):
     """
     Attempt to look up the public key which should be used to verify the token.
 
@@ -220,6 +254,7 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True, logger=None):
     Args:
         encoded_token (str): encoded JWT
         attempt_refresh (bool): whether to refresh public keys
+        pkey_cache (dict): OPTIONAL store public key in in-memory cache for non-app context caching
 
     Return:
         str: public RSA key for token verification
@@ -227,9 +262,19 @@ def get_public_key_for_token(encoded_token, attempt_refresh=True, logger=None):
     logger = logger or get_logger(__name__, log_level="info")
     kid = get_kid(encoded_token)
 
-    force_issuer = flask.current_app.config.get("FORCE_ISSUER")
+    force_issuer = (
+        flask.current_app.config.get("FORCE_ISSUER")
+        if flask.has_app_context()
+        else None
+    )
     if force_issuer:
         iss = flask.current_app.config["USER_API"]
     else:
         iss = get_iss(encoded_token)
-    return get_public_key(kid, iss=iss, attempt_refresh=attempt_refresh, logger=logger)
+    return get_public_key(
+        kid,
+        iss=iss,
+        attempt_refresh=attempt_refresh,
+        pkey_cache=pkey_cache,
+        logger=logger,
+    )
