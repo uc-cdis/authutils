@@ -1,4 +1,4 @@
-from authlib.client import OAuthClient
+from authlib.oauth2.client import OAuth2Client
 
 
-__all__ = ["OAuthClient"]
+__all__ = ["OAuth2Client"]
