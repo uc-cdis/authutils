@@ -7,10 +7,10 @@ with an OAuth client instance from the ``authlib`` package as follows:
 
 .. code-block:: python
 
-    from authutils.oauth2.client import OAuth2Client
+    from authutils.oauth2.client import OAuthClient
     from service.api import app
 
-    app.oauth_client = OAuth2Client(
+    app.oauth_client = OAuthClient(
         'client-id',
         client_secret='...',
         api_base_url='https://api.auth.net/',
