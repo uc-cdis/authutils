@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "authutils"
-version = "6.1.1"
+version = "6.1.2"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -11,7 +11,7 @@ cached-property = "~=1.4"
 cdiserrors = "<2.0.0"
 xmltodict = "~=0.9"
 
-authlib = "~=0.11"
+authlib = "0.11.0"
 httpx = ">=0.12.1,<1.0.0"
 pyjwt = {version = "~=1.5", extras = ["crypto"]}
 
