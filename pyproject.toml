@@ -16,7 +16,7 @@ httpx = ">=0.12.1,<1.0.0"
 pyjwt = {version = "~=1.5", extras = ["crypto"]}
 
 Flask = {version = ">=0.10.1", optional = true}
-fastapi = {version = "^0.54.1", optional = true}
+fastapi = {version = ">=0.54.1,<0.66.0", optional = true}
 
 [tool.poetry.extras]
 flask = ["Flask"]
