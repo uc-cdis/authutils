@@ -29,7 +29,7 @@ deploy:
   script: "$HOME/.poetry/bin/poetry publish"
   skip_cleanup: true
   on:
-    python: 3.6
+    python: 3.9
     repo: uc-cdis/authutils
     tags: true
 after_deploy:
