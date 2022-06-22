@@ -24,6 +24,7 @@ fastapi = ["fastapi"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.2"
+fastapi = ">=0.0.0,<1.0.0"
 mock = "^4.0.2"
 pytest-cov = "^2.8.1"
 pytest-flask = "~=0.10"

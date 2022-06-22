@@ -163,7 +163,7 @@ name = "fastapi"
 version = "0.65.3"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -359,7 +359,7 @@ name = "pydantic"
 version = "1.9.1"
 description = "Data validation and settings management using python type hints"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.6.1"
 
 [package.dependencies]
@@ -499,7 +499,7 @@ name = "starlette"
 version = "0.14.2"
 description = "The little ASGI library that shines."
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.6"
 
 [package.extras]
@@ -518,7 +518,7 @@ name = "typing-extensions"
 version = "4.2.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 
 [[package]]
@@ -580,7 +580,7 @@ flask = ["Flask"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "4372ab4572af46965616f067bb72798757dcce6bf000a890e4cbc5306c0ecffc"
+content-hash = "4c0055fc18e890b7f0b17f817e3bf79f50fe83aeedfda02c0bbddb5348562943"
 
 [metadata.files]
 anyio = [

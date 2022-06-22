@@ -73,8 +73,7 @@ def test_force_issuer_wrong_issuer(
     token = jwt.encode(
         claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
     )
-    encoded_jwt = token.decode("utf-8")
-    headers = {"Authorization": "Bearer {}".format(encoded_jwt)}
+    headers = {"Authorization": "Bearer {}".format(token)}
     assert async_client.get("/force_issuer", headers=headers).status_code == 403
 
 
@@ -93,8 +92,7 @@ def test_wrong_issuer(async_client, claims, token_headers, rsa_private_key):
     token = jwt.encode(
         claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
     )
-    encoded_jwt = token.decode("utf-8")
-    headers = {"Authorization": "Bearer {}".format(encoded_jwt)}
+    headers = {"Authorization": "Bearer {}".format(token)}
     assert async_client.get("/whoami", headers=headers).status_code == 403
 
 
@@ -104,16 +102,15 @@ def test_wrong_kid(async_client, claims, token_headers, rsa_private_key):
     token = jwt.encode(
         claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
     )
-    encoded_jwt = token.decode("utf-8")
-    headers = {"Authorization": "Bearer {}".format(encoded_jwt)}
+    headers = {"Authorization": "Bearer {}".format(token)}
     assert async_client.get("/whoami", headers=headers).status_code == 403
 
 
 def test_expired(async_client, claims, encoded_jwt, encoded_jwt_expired):
-    headers = {"Authorization": "Bearer {}".format(encoded_jwt.decode())}
+    headers = {"Authorization": "Bearer {}".format(encoded_jwt)}
     resp = async_client.get("/whoami", headers=headers)
     assert resp.status_code == 200
     assert resp.json() == claims
 
-    headers = {"Authorization": "Bearer {}".format(encoded_jwt_expired.decode())}
+    headers = {"Authorization": "Bearer {}".format(encoded_jwt_expired)}
     assert async_client.get("/whoami", headers=headers).status_code == 403
