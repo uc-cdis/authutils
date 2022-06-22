@@ -1,12 +1,14 @@
 language: python
 dist: xenial
 python:
-- '2.7'
-- '3.6'
+- 2.7
+- 3.6
+- 3.9
 cache: pip
 matrix:
   allow_failures:
-  - python: '2.7'
+  - python: 2.7
+  - python: 3.6
 env:
   global:
   - secure: Y5j85mZkKueWncA78MCDBDdzp8gKrK+WUU7YCmzfUWIgyqgwgrEAZRe7urojiX/+7iwa9MZA8H9xwNNt9ERAkyizEwMPfeU12mGlj2PCwTRfK2AwGwtdzvsBgxDmmCk1BxtvKXjIvx68XYOT1GAX1n3eyv9H+wD0ljB6tMYUxubNKbJ/fn8eGB3EVksHRb/lwOcLQUmQGJhUSF4oBq6mMZyQjBlKvuVMzHLsYL/kOEu2eqpTPMVA8NGMrWyo4NGiqX7WWv/kncUmVz66uWBZsDVZ1rXKZfunRxpbgJlmHAAL7WakHhTnB3+nQx5KoBkEhk0feP7tpD1c/c3mz6xKjAsnDIa501WcyyOi/OGd8pjXa/kUv0A4qIS5fWVjCdpCKpq30NfGrkdD6CPrrFw/igr2y+EMicYDQ5gaXbuaaM12ctqYqh4kuHnKOIHuSdhHB1AbKpORfdEdTdD2Ufcdd7F1kWYZL1bFKqD4u6O57b58/nkstFAA2vyyvdXHm0oGzk076019gIWEwHzlmKjrzLXCpkVcdzarq9HJcAT+6Bvi+2eYOKjssA/NLHvETYlGis3n3FZcNnHLjfPBmFc+6xCFu7FMCibj0II5NwDugup968Xp0dxbhAlP0UFCrS4V/hHvnd9TmCLZUp/HGOmRsKwsubykqXyYYKvr5CGMCDs=
