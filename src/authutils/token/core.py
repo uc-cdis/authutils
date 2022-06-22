@@ -31,7 +31,9 @@ def get_kid(encoded_token):
 
 def get_iss(encoded_token):
     try:
-        return jwt.decode(encoded_token, verify=False).get("iss")
+        return jwt.decode(
+            encoded_token, options={"verify_signature": False, "verify_exp": True}
+        ).get("iss")
     except jwt.InvalidTokenError as e:
         raise JWTError(e)
 

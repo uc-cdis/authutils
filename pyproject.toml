@@ -6,17 +6,17 @@ authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.9"
 cached-property = "~=1.4"
 cdiserrors = "<2.0.0"
 xmltodict = "~=0.9"
 
 authlib = "0.11.0"
-httpx = ">=0.12.1,<1.0.0"
-pyjwt = {version = "~=1.5", extras = ["crypto"]}
+httpx = ">=0.23.0,<1.0.0"
+pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 
 Flask = {version = ">=0.10.1", optional = true}
-fastapi = {version = "^0.54.1", optional = true}
+fastapi = {version = "^0.65.2", optional = true}
 
 [tool.poetry.extras]
 flask = ["Flask"]
@@ -24,6 +24,7 @@ fastapi = ["fastapi"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.2"
+fastapi = ">=0.0.0,<1.0.0"
 mock = "^4.0.2"
 pytest-cov = "^2.8.1"
 pytest-flask = "~=0.10"
