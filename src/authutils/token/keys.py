@@ -26,7 +26,13 @@ import json
 from collections import OrderedDict
 
 from cdislogging import get_logger
-import flask
+
+try:
+    import flask
+except ImportError:
+    print(
+        "Unable to import flask. Some functionalities may not work. Flask can be installed as an extra."
+    )
 import jwt
 import httpx
 from cryptography.hazmat.backends import default_backend
@@ -36,6 +42,44 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from authutils.errors import JWTError
 from .core import get_keys_url, get_kid, get_iss
+
+
+def get_pem_key(key, logger=None):
+    """
+    The key is serialized to PEM if not already.
+
+    Return: tuple (key id, key in PEM format)
+    """
+    if "kty" in key and key["kty"] == "RSA":
+        if logger:
+            logger.debug(
+                "Serializing RSA public key (kid: {}) to PEM format.".format(key["kid"])
+            )
+        # Decode public numbers https://tools.ietf.org/html/rfc7518#section-6.3.1
+        n_padded_bytes = base64.urlsafe_b64decode(
+            key["n"] + "=" * (4 - len(key["n"]) % 4)
+        )
+        e_padded_bytes = base64.urlsafe_b64decode(
+            key["e"] + "=" * (4 - len(key["e"]) % 4)
+        )
+        n = int.from_bytes(n_padded_bytes, "big", signed=False)
+        e = int.from_bytes(e_padded_bytes, "big", signed=False)
+        # Serialize and encode public key--PyJWT decode/validation requires PEM
+        rsa_public_key = rsa.RSAPublicNumbers(e, n).public_key(default_backend())
+        public_bytes = rsa_public_key.public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        # Cache the encoded key by issuer
+        return key["kid"], public_bytes
+    else:
+        if logger:
+            logger.debug(
+                "Key type (kty) is not 'RSA'; assuming PEM format. Skipping key serialization. (kid: {})".format(
+                    key[0]
+                )
+            )
+        return key[0], key[1]
 
 
 def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
@@ -125,34 +169,8 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
 
     issuer_public_keys = {}
     for key in jwt_public_keys:
-        if "kty" in key and key["kty"] == "RSA":
-            logger.debug(
-                "Serializing RSA public key (kid: {}) to PEM format.".format(key["kid"])
-            )
-            # Decode public numbers https://tools.ietf.org/html/rfc7518#section-6.3.1
-            n_padded_bytes = base64.urlsafe_b64decode(
-                key["n"] + "=" * (4 - len(key["n"]) % 4)
-            )
-            e_padded_bytes = base64.urlsafe_b64decode(
-                key["e"] + "=" * (4 - len(key["e"]) % 4)
-            )
-            n = int.from_bytes(n_padded_bytes, "big", signed=False)
-            e = int.from_bytes(e_padded_bytes, "big", signed=False)
-            # Serialize and encode public key--PyJWT decode/validation requires PEM
-            rsa_public_key = rsa.RSAPublicNumbers(e, n).public_key(default_backend())
-            public_bytes = rsa_public_key.public_bytes(
-                serialization.Encoding.PEM,
-                serialization.PublicFormat.SubjectPublicKeyInfo,
-            )
-            # Cache the encoded key by issuer
-            issuer_public_keys[key["kid"]] = public_bytes
-        else:
-            logger.debug(
-                "Key type (kty) is not 'RSA'; assuming PEM format. Skipping key serialization. (kid: {})".format(
-                    key[0]
-                )
-            )
-            issuer_public_keys[key[0]] = key[1]
+        kid, pem_bytes = get_pem_key(key, logger)
+        issuer_public_keys[kid] = pem_bytes
 
     if flask.has_app_context():
         flask.current_app.jwt_public_keys.update({user_api: issuer_public_keys})
