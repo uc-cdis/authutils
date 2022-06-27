@@ -7,6 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.status import HTTP_403_FORBIDDEN
 
 from . import core
+from .keys import get_pem_key
 from ..errors import JWTError, AuthError
 
 bearer = HTTPBearer()
@@ -76,7 +77,9 @@ def access_token(
                 async with httpx.AsyncClient() as client:
                     resp = await client.get(core.get_keys_url(issuer))
                     resp.raise_for_status()
-                    pub_keys.set_result(OrderedDict(resp.json()["keys"]))
+                    pub_keys.set_result(
+                        OrderedDict(get_pem_key(key) for key in resp.json()["keys"])
+                    )
             except Exception as e:
                 _jwt_public_keys.pop(issuer)
                 pub_keys.set_exception(
