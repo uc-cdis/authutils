@@ -10,11 +10,15 @@ from ..errors import (
 )
 
 
-def get_keys_url(issuer):
+def get_keys_url(issuer, force_issuer=False):
     # Prefer OIDC discovery doc, but fall back on Fence-specific /jwt/keys for backwards compatibility
     openid_cfg_path = "/".join(
         [issuer.strip("/"), ".well-known", "openid-configuration"]
     )
+    
+    if force_issuer:
+        return "/".join([issuer.strip("/"), "jwt", "keys"])
+    
     try:
         jwks_uri = httpx.get(openid_cfg_path).json().get("jwks_uri", "")
         return jwks_uri
