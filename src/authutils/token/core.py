@@ -10,7 +10,7 @@ from ..errors import (
 )
 
 
-def get_keys_url(issuer, force_issuer=False):
+def get_keys_url(issuer, force_issuer=None):
     # Prefer OIDC discovery doc, but fall back on Fence-specific /jwt/keys for backwards compatibility
     openid_cfg_path = "/".join(
         [issuer.strip("/"), ".well-known", "openid-configuration"]
