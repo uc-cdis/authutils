@@ -9,19 +9,21 @@ env:
   - secure: XqLO1UacRvOVsev/OXvBW/2ta3gM4m9oG84MktYei/Ak5sWbcBSYS/hSRM82VtsRLtUr8ImhrmS+61m/6f6NGg2nt5tj3eiM/LCl7Zg+138covsOX7R4/l2g7eBCbuS3gHEHNP9EWCEz4oWVbJsh0cw4UciAUXqU7MT+27wLniQk4PvMoiuBXLA2XE8XJ3B2AiKxGjT6VP9XDSAhCteDGEVJUGVIgwn1trN5X2eaL5++0EAEtVSlOpiWrwTW/6iyc0lWo3EH1TV5uc1aU5VJ+gWtaDZLHkhOgDmNlgYmAljOlNwOY/RKxaPW2aeQXruV8V4oMehowz6zq9WrtpsqhSPnaM0uBbEqkgaGEtVlqFe9Lx9Syrxj65OFihvCHBExc2M+k/+QPwaO4v7gxTUHI+fjiquqB9iiu32fL0r4yUBFXlrgStsGu9iV/x+40LWVu+d4mXey+jbUP+CGrqGmXaC3751VVRNgMCjWiWJdqxzSgDofxUBGfG6J/3wUGErSqMO2V3Ssp5whElVNnFubOiRmGEoyxksnTapGyAKCV9tNB9264v63KG8jbaevy2yS/mQqfMU/bxGPgOswfZ4ccxWkEvKYm2RNJ62XugNCS5/FpTL90Ii2zw7B17+Gy3KriIeQlen9lgNZTOWCKNvCGiGIjBejarng/mVH/dmTc98=
 install:
 - pip uninstall -y userdatamodel || true
-- curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-- $HOME/.poetry/bin/poetry install -E flask -E fastapi
+- pip install poetry
+- poetry install -vv --no-interaction
+- poetry show -vv
+- poetry install -E flask -E fastapi
 script:
-- $HOME/.poetry/bin/poetry run py.test -vv --cov=src --cov-report xml tests
+- poetry run py.test -vv --cov=src --cov-report xml tests
 after_script:
 - pip install codacy-coverage
 - python-codacy-coverage -r coverage.xml
 before_deploy:
-- $HOME/.poetry/bin/poetry config http-basic.pypi $PYPI_USER $PYPI_PASSWORD
-- $HOME/.poetry/bin/poetry build
+- poetry config http-basic.pypi $PYPI_USER $PYPI_PASSWORD
+- poetry build
 deploy:
   provider: script
-  script: "$HOME/.poetry/bin/poetry publish"
+  script: "poetry publish"
   skip_cleanup: true
   on:
     python: 3.9
