@@ -153,7 +153,12 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
     if not user_api:
         raise ValueError("no URL(s) provided for user API")
 
-    path = get_keys_url(user_api)
+    force_issuer = (
+        flask.current_app.config.get("FORCE_ISSUER")
+        if flask.has_app_context()
+        else None
+    )
+    path = get_keys_url(user_api, force_issuer)
     try:
         jwt_public_keys = httpx.get(path).json()["keys"]
     except:
