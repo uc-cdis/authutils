@@ -24,7 +24,7 @@ def set_current_user(**kwargs):
         "audience", default_expected_audience
     )
 
-    logger.info("kwargs: %s", **kwargs)
+    logger.info("kwargs: %s", kwargs)
 
     flask.g.user = CurrentUser(**kwargs)
     set_current_token(flask.g.user._claims)
