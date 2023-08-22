@@ -10,10 +10,10 @@ from werkzeug.local import LocalProxy
 from authutils.errors import AuthError
 from authutils.token.validate import set_current_token, validate_request
 
+logger = get_logger(__name__, log_level="info")
+
 
 def set_current_user(**kwargs):
-    logger = get_logger(__name__, log_level="info")
-
     default_expected_audience = flask.current_app.config.get("OIDC_ISSUER")
     if not default_expected_audience:
         default_expected_audience = flask.current_app.config.get("USER_API")
