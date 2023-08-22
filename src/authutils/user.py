@@ -13,7 +13,10 @@ from authutils.token.validate import set_current_token, validate_request
 
 def set_current_user(**kwargs):
     logger = get_logger(__name__, log_level="info")
-    default_expected_audience = flask.current_app.config.get("USER_API")
+
+    default_expected_audience = flask.current_app.config.get("OIDC_ISSUER")
+    if not default_expected_audience:
+        default_expected_audience = flask.current_app.config.get("USER_API")
     # Gen3 services use both USER_API and BASE_URL
     if not default_expected_audience:
         default_expected_audience = flask.current_app.config.get("BASE_URL")
