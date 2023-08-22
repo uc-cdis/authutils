@@ -3,6 +3,7 @@ import json
 
 from cached_property import cached_property
 from cdiserrors import AuthZError
+from cdislogging import get_logger
 import flask
 from werkzeug.local import LocalProxy
 
@@ -11,7 +12,7 @@ from authutils.token.validate import set_current_token, validate_request
 
 
 def set_current_user(**kwargs):
-    logger = logger or get_logger(__name__, log_level="info")
+    logger = get_logger(__name__, log_level="info")
     default_expected_audience = flask.current_app.config.get("USER_API")
     # Gen3 services use both USER_API and BASE_URL
     if not default_expected_audience:
