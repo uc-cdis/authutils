@@ -123,6 +123,8 @@ def validate_jwt(
     if aud is None:
         aud = flask.current_app.config.get("USER_API")
 
+    logger.info("Setting audience: %s", aud)
+
     if public_key is None:
         public_key = get_public_key_for_token(
             encoded_token, attempt_refresh=attempt_refresh, logger=logger
