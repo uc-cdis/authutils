@@ -10,6 +10,9 @@ env:
 install:
 - pip uninstall -y userdatamodel || true
 - pip install poetry
+# 2.0.0 causes issues b/c it relies on openssl >1.1.1 which isn't on this VM
+- "'yes' | pip uninstall urllib3"
+- pip install urllib3==1.26.16 --ignore-installed.
 - poetry install -vv --no-interaction
 - poetry show -vv
 - poetry install -E flask -E fastapi
