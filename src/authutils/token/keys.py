@@ -164,7 +164,7 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
     except:
         raise JWTError(
             "Attempted to refresh public keys for {},"
-            "but could not get keys from path {}.".format(user_api, path)
+            " but could not get keys from path {}.".format(user_api, path)
         )
 
     logger.info("Refreshing public key cache for issuer {}...".format(user_api))
