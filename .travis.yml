@@ -1,5 +1,5 @@
 language: python
-dist: xenial
+dist: jammy
 python: 3.9
 cache: pip
 env:
@@ -10,8 +10,6 @@ env:
 install:
 - pip uninstall -y userdatamodel || true
 - pip install poetry
-# 2.0.0 causes issues b/c it relies on openssl >1.1.1 which isn't on this VM
-- poetry add urllib3==1.26.16
 - poetry install -vv --no-interaction
 - poetry show -vv
 - poetry install -E flask -E fastapi
