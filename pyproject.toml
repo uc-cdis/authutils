@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "authutils"
-version = "6.2.2"
+version = "6.2.4"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -15,6 +15,8 @@ authlib = ">=1.1.0"
 httpx = ">=0.23.0,<1.0.0"
 pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 
+#Pegging flask to < 2.3.3 so pytest-flask 1.2.0 (latest on 10-09-2023) could work
+#https://github.com/pytest-dev/pytest-flask/issues/167
 Flask = {version = "<=2.3.3", optional = true}
 fastapi = {version = "^0.65.2", optional = true}
 
