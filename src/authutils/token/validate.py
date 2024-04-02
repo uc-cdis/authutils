@@ -116,12 +116,12 @@ def validate_jwt(
             if value:
                 issuers.append(value)
 
-    # Can't set arg default to config[x] in fn def, so doing it this way.
-    if aud is None:
-        aud = flask.current_app.config.get("BASE_URL")
-    # Some Gen3 apps use BASE_URL and some use USER_API, so fall back on USER_API
-    if aud is None:
-        aud = flask.current_app.config.get("USER_API")
+    # # Can't set arg default to config[x] in fn def, so doing it this way.
+    # if aud is None:
+    #     aud = flask.current_app.config.get("BASE_URL")
+    # # Some Gen3 apps use BASE_URL and some use USER_API, so fall back on USER_API
+    # if aud is None:
+    #     aud = flask.current_app.config.get("USER_API")
 
     if public_key is None:
         public_key = get_public_key_for_token(
