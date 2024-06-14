@@ -147,9 +147,10 @@ def validate_request(scope={}, audience=None, purpose="access", logger=None):
         raise JWTError("no authorization header provided")
     except IndexError:
         msg = "could not parse authorization header"
-        logger.error(
+        logger.debug(
             f"{msg}. Received header: {flask.request.headers['Authorization']}"
         )
+        logger.error(f"{msg}.")
         raise JWTError(msg)
 
     # Pass token to ``validate_jwt``.
