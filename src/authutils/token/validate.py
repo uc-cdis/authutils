@@ -118,6 +118,8 @@ def validate_jwt(
 
     # Can't set arg default to config[x] in fn def, so doing it this way.
     if aud is None:
+        aud = flask.current_app.config.get("OIDC_ISSUER")
+    if aud is None:
         aud = flask.current_app.config.get("BASE_URL")
     # Some Gen3 apps use BASE_URL and some use USER_API, so fall back on USER_API
     if aud is None:
