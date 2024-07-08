@@ -16,7 +16,7 @@ _jwt_public_keys = {}
 
 
 def access_token(
-    *scopes, audience=None, issuer=None, allowed_issuers=None, purpose=None
+    *scopes, audience=None, issuer=None, allowed_issuers=None, purpose=None, force_issuer=None
 ):
     """
     Validate and return the JWT bearer token in HTTP header::
@@ -75,7 +75,7 @@ def access_token(
             pub_keys = _jwt_public_keys[issuer] = Future()
             try:
                 async with httpx.AsyncClient() as client:
-                    resp = await client.get(core.get_keys_url(issuer))
+                    resp = await client.get(core.get_keys_url(issuer, force_issuer))
                     resp.raise_for_status()
                     pub_keys.set_result(
                         OrderedDict(get_pem_key(key) for key in resp.json()["keys"])
