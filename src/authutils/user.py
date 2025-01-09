@@ -54,7 +54,7 @@ class CurrentUser(object):
         if "scope" not in jwt_kwargs:
             jwt_kwargs["scope"] = {"openid"}
         self._claims = claims or validate_request(**jwt_kwargs)
-        self.id = self._claims["sub"]
+        self.id = self._claims.get("sub")
         self.username = self._get_user_info("name")
         self.projects = self._get_user_info("projects", default={})
 
