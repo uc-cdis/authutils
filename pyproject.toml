@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "authutils"
-version = "6.2.6"
+version = "6.2.7"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9.2, <4.0"
 cached-property = "~=1.4"
 cdiserrors = "<2.0.0"
 xmltodict = "~=0.9"
@@ -15,7 +15,7 @@ authlib = ">=1.1.0"
 httpx = ">=0.23.0,<1.0.0"
 pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 # specify cryptography (dependency of authlib and pyjwt) for snyk issue
-cryptography = ">=41.0.6"
+cryptography = "^44.0.1"
 
 #Pegging flask to < 2.3.3 so pytest-flask 1.2.0 (latest on 10-09-2023) could work
 #https://github.com/pytest-dev/pytest-flask/issues/167
