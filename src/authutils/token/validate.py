@@ -122,6 +122,9 @@ def validate_jwt(
     # Some Gen3 apps use BASE_URL and some use USER_API, so fall back on USER_API
     if aud is None:
         aud = flask.current_app.config.get("USER_API")
+    # Skip aud validation if no audience is configured
+    if aud is None:
+        options["verify_aud"] = False
 
     if public_key is None:
         public_key = get_public_key_for_token(
