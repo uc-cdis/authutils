@@ -243,7 +243,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache=None, logger=
     if need_refresh and attempt_refresh:
         refresh_jwt_public_keys(iss, pkey_cache=pkey_cache, logger=logger)
     elif need_refresh and not attempt_refresh:
-        logger.warn(
+        logger.warning(
             "Public key {} not cached, but application is not attempting refresh.".format(
                 kid
             )

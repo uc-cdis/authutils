@@ -116,22 +116,14 @@ def validate_jwt(
             if value:
                 issuers.append(value)
 
-    # Can't set arg default to config[x] in fn def, so doing it this way.
-    if aud is None:
-        aud = flask.current_app.config.get("BASE_URL")
-    # Some Gen3 apps use BASE_URL and some use USER_API, so fall back on USER_API
-    if aud is None:
-        aud = flask.current_app.config.get("USER_API")
-    # Skip aud validation if no audience is configured
-    if aud is None:
-        options["verify_aud"] = False
-
     if public_key is None:
         public_key = get_public_key_for_token(
             encoded_token, attempt_refresh=attempt_refresh, logger=logger
         )
 
-    claims = core.validate_jwt(encoded_token, public_key, aud, scope, issuers, options)
+    claims = core.validate_jwt(
+        encoded_token, public_key, aud, scope, issuers, options, logger=logger
+    )
     if purpose:
         core.validate_purpose(claims, purpose)
     return claims

@@ -1,6 +1,8 @@
 import httpx
 import jwt
 
+from cdislogging import get_logger
+
 from ..errors import (
     JWTAudienceError,
     JWTExpiredError,
@@ -70,7 +72,9 @@ def validate_purpose(claims, pur):
         )
 
 
-def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
+def validate_jwt(
+    encoded_token, public_key, aud, scope, issuers, options={}, logger=None
+):
     """
     Validate the encoded JWT ``encoded_token``, which must satisfy the
     scopes ``scope``.
@@ -112,14 +116,9 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
         JWTScopeError: if scope validation fails
         JWTError: if some other token validation step fails
     """
+    logger = logger or get_logger(__name__, log_level="info")
 
     # Typecheck arguments.
-    if not isinstance(aud, str) and not aud is None:
-        raise ValueError(
-            "aud must be string or None. Instead received aud of type {}".format(
-                type(aud)
-            )
-        )
     if not isinstance(scope, set) and not isinstance(scope, list) and not scope is None:
         raise ValueError(
             "scope must be set or list or None. Instead received scope of type {}".format(
@@ -133,12 +132,22 @@ def validate_jwt(encoded_token, public_key, aud, scope, issuers, options={}):
             )
         )
 
+    # Skip audience validation.
+    # Background: authutils is used by internal Gen3 services asking if they can use a Gen3 Fence
+    # token. Each Gen3 service was setting `aud=<Fence URL>` which is not the way the audience
+    # field is supposed to be used. The validation of which Gen3 instance the token is meant for is
+    # done through the issuer `iss` field instead.
+    if aud is not None:
+        logger.warning(
+            f"Authutils no longer validates the token's `aud` field. Received {aud=} which will be ignored."
+        )
+    options["verify_aud"] = False
+
     try:
         token = jwt.decode(
             encoded_token,
             key=public_key,
             algorithms=["RS256"],
-            audience=aud,
             options=options,
         )
     except jwt.InvalidAudienceError as e:

@@ -66,16 +66,16 @@ def test_invalid_scope_rejected(encoded_jwt, rsa_public_key, default_audience, i
         )
 
 
-def test_missing_aud_rejected(encoded_jwt, rsa_public_key, default_scopes, iss):
+def test_missing_aud_not_rejected(encoded_jwt, rsa_public_key, default_scopes, iss):
     """
     Test that if ``validate_jwt`` is passed a value for ``aud`` which does not
-    appear in the token, a ``JWTError`` is raised.
+    appear in the token, a ``JWTError`` is NOT raised, because the audience is not
+    validated anymore.
     """
-    with pytest.raises(JWTError):
-        validate_jwt(encoded_jwt, rsa_public_key, "not-in-aud", default_scopes, [iss])
+    validate_jwt(encoded_jwt, rsa_public_key, "not-in-aud", default_scopes, [iss])
 
 
-def test_unexpected_aud_rejected(
+def test_unexpected_aud_not_rejected(
     encoded_jwt,
     rsa_public_key,
     default_scopes,
@@ -83,10 +83,10 @@ def test_unexpected_aud_rejected(
 ):
     """
     Test that if the token contains an ``aud`` claim and no ``aud`` arg is passed
-    to ``validate_jwt``, a ``JWTAudienceError`` is raised.
+    to ``validate_jwt``, a ``JWTAudienceError`` is NOT raised, because the audience is
+    not validated anymore.
     """
-    with pytest.raises(JWTAudienceError):
-        validate_jwt(encoded_jwt, rsa_public_key, None, default_scopes, [iss])
+    validate_jwt(encoded_jwt, rsa_public_key, None, default_scopes, [iss])
 
 
 def test_expected_missing_aud_accepted(
