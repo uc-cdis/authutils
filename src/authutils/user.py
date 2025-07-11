@@ -11,7 +11,6 @@ from authutils.token.validate import set_current_token, validate_request
 
 
 def set_current_user(**kwargs):
-    kwargs.setdefault("jwt_kwargs", {})
     flask.g.user = CurrentUser(**kwargs)
     set_current_token(flask.g.user._claims)
     return flask.g.user
