@@ -135,8 +135,10 @@ def validate_jwt(
     # Skip audience validation.
     # Background: authutils is used by internal Gen3 services asking if they can use a Gen3 Fence
     # token. Each Gen3 service was setting `aud=<Fence URL>` which is not the way the audience
-    # field is supposed to be used. The validation of which Gen3 instance the token is meant for is
-    # done through the issuer `iss` field instead.
+    # field is supposed to be used: we were checking that fence was in the list, which it always
+    # was if fence generated it, so this provided no further protection beyond general JWT / public
+    # key verification and validation. The validation of which Gen3 instance the token is meant for
+    # is already done by using the issuer (`iss` field) to get public keys and verify the signature.
     if aud is not None:
         logger.warning(
             f"Authutils no longer validates the token's `aud` field. Received {aud=} which will be ignored."
