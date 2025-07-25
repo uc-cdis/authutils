@@ -84,9 +84,10 @@ def validate_jwt(
 
     - Decode JWT using public key; PyJWT will fail if iat or exp fields are
       invalid
-    - PyJWT will also fail if the aud field is present in the JWT but no
+    - PyJWT will NOT fail if the aud field is present in the JWT but no
       ``aud`` arg is passed, or if the ``aud`` arg does not match one of
-      the items in the token aud field
+      the items in the token aud field, because the audience is not validated
+      anymore
     - Check issuers: token iss field must match one of the items in the
       ``issuers`` arg
     - Check scopes: token scopes must be a superset of required scopes
@@ -95,11 +96,8 @@ def validate_jwt(
     Args:
         encoded_token (str): encoded JWT
         public_key (str): public key to validate the JWT signature
-        aud (Optional[str]):
-          audience with which the app identifies, usually an OIDC
-          client id, which the JWT will be expected to include in its ``aud``
-          claim. Optional; if no ``aud`` argument given, then the JWT must
-          not have an ``aud`` claim, or validation will fail.
+        aud (Optional[str]): parameter present for backwards compatibility; the
+          audience is not validated anymore
         scope (Optional[Iterable[str]]):
           set of scopes, each of which the JWT must satisfy in its
           ``scope`` claim. Optional.
