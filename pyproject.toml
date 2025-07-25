@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "authutils"
-version = "6.2.7"
+version = "7.0.0"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -26,7 +26,7 @@ fastapi = {version = "^0.65.2", optional = true}
 flask = ["Flask"]
 fastapi = ["fastapi"]
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^5.4.2"
 fastapi = ">=0.0.0,<1.0.0"
 mock = "^4.0.2"

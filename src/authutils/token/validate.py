@@ -82,12 +82,8 @@ def validate_jwt(
     Args:
         encoded_token (str): the base64 encoding of the token
         aud (Optional[str]):
-            audience as which the app identifies, which the JWT will be
-            expected to include in its ``aud`` claim.
-            Optional; will default to issuer from flask.current_app.config
-            if available (either BASE_URL or USER_API).
-            To skip aud validation, pass the following in the options arg:
-              options={"verify_aud": False}
+            parameter present for backwards compatibility; the audience
+            is not validated anymore
         scope (Optional[Iterable[str]]):
             scopes that the token must satisfy
         purpose (Optional[str]):
@@ -116,19 +112,14 @@ def validate_jwt(
             if value:
                 issuers.append(value)
 
-    # Can't set arg default to config[x] in fn def, so doing it this way.
-    if aud is None:
-        aud = flask.current_app.config.get("BASE_URL")
-    # Some Gen3 apps use BASE_URL and some use USER_API, so fall back on USER_API
-    if aud is None:
-        aud = flask.current_app.config.get("USER_API")
-
     if public_key is None:
         public_key = get_public_key_for_token(
             encoded_token, attempt_refresh=attempt_refresh, logger=logger
         )
 
-    claims = core.validate_jwt(encoded_token, public_key, aud, scope, issuers, options)
+    claims = core.validate_jwt(
+        encoded_token, public_key, aud, scope, issuers, options, logger=logger
+    )
     if purpose:
         core.validate_purpose(claims, purpose)
     return claims
