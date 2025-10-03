@@ -11,7 +11,7 @@ cached-property = "~=1.4"
 cdiserrors = "<2.0.0"
 xmltodict = "~=0.9"
 
-authlib = "1.6.4"
+authlib = ">=1.6.4"
 httpx = ">=0.23.0,<1.0.0"
 pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 # specify cryptography (dependency of authlib and pyjwt) for snyk issue
