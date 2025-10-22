@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "authutils"
-version = "7.0.1"
+version = "7.1.0"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
