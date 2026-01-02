@@ -31,11 +31,11 @@ flask = ["Flask"]
 fastapi = ["fastapi"]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^5.4.2"
+pytest = "*"
 fastapi = ">=0.0.0,<1.0.0"
 mock = "^4.0.2"
-pytest-cov = "^2.8.1"
-pytest-flask = "^1.2.0"
+pytest-cov = "*"
+pytest-flask = "*"
 requests = "^2.23.0"
 deptry = "^0.24.0"
 
