@@ -8,9 +8,15 @@ import re
 
 import xmltodict
 from cdislogging import get_logger
-from datamodelutils import models
 from xml.parsers.expat import ExpatError
 from cdiserrors import InternalError, UserError
+
+try:
+    from datamodelutils import models
+except ModuleNotFoundError:
+    raise Exception(
+        "The dbgap module requires datamodelutils. `poetry add 'authutils[datamodelutils]'`"
+    )
 
 PHSID_REGEX = re.compile("(phs\d+.v)(\d)(.*)")
 
