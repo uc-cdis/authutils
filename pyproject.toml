@@ -10,7 +10,6 @@ python = ">=3.13, <4.0"
 cached-property = "~=1.4"
 cdiserrors = "*"
 cdislogging = "*"
-datamodelutils = "*"
 starlette = "*"
 werkzeug = "*"
 xmltodict = "~=0.9"
@@ -25,10 +24,12 @@ cryptography = "^44.0.1"
 #https://github.com/pytest-dev/pytest-flask/issues/167
 Flask = {version = "<=2.3.3", optional = true}
 fastapi = {version = "^0.65.2", optional = true}
+datamodelutils = { version = "*", optional = true }
 
 [tool.poetry.extras]
 flask = ["Flask"]
 fastapi = ["fastapi"]
+datamodelutils = ["datamodelutils"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

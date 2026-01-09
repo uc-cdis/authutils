@@ -26,14 +26,14 @@ files = [
 
 [[package]]
 name = "anyio"
-version = "4.12.0"
+version = "4.12.1"
 description = "High-level concurrency and networking framework on top of asyncio or Trio"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "anyio-4.12.0-py3-none-any.whl", hash = "sha256:dad2376a628f98eeca4881fc56cd06affd18f659b17a747d3ff0307ced94b1bb"},
-    {file = "anyio-4.12.0.tar.gz", hash = "sha256:73c693b567b0c55130c104d0b43a9baf3aa6a31fc6110116509f27bf75e21ec0"},
+    {file = "anyio-4.12.1-py3-none-any.whl", hash = "sha256:d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c"},
+    {file = "anyio-4.12.1.tar.gz", hash = "sha256:41cfcc3a4c85d3f05c932da7c26d0201ac36f72abd4435ba90d0464a3ffed703"},
 ]
 
 [package.dependencies]
@@ -46,9 +46,10 @@ trio = ["trio (>=0.31.0) ; python_version < \"3.10\"", "trio (>=0.32.0) ; python
 name = "attrs"
 version = "25.4.0"
 description = "Classes Without Boilerplate"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "attrs-25.4.0-py3-none-any.whl", hash = "sha256:adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373"},
     {file = "attrs-25.4.0.tar.gz", hash = "sha256:16d5969b87f0859ef33a48b35d55ac1be6e42ae49d5e853b597db70c35c57e11"},
@@ -96,43 +97,45 @@ files = [
 
 [[package]]
 name = "cdiserrors"
-version = "1.0.0"
+version = "2.1.0"
 description = "Gen3 shared exceptions and utilities."
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = "<4,>=3.13"
 groups = ["main"]
 files = [
-    {file = "cdiserrors-1.0.0-py3-none-any.whl", hash = "sha256:2e188645832e8c98468267af3e54bc5d3a298078b9869899256251e54dc1599d"},
-    {file = "cdiserrors-1.0.0.tar.gz", hash = "sha256:d6e56b0a9f6cc0104f4344f837b735fefb2caf8d0c4ef50569881dc140ebfc4a"},
+    {file = "cdiserrors-2.1.0-py3-none-any.whl", hash = "sha256:702a15e3831f85b4d8b1cd4f66f8581cbe43faf6bb22d1726e657e76cf6d238b"},
+    {file = "cdiserrors-2.1.0.tar.gz", hash = "sha256:853f807111f188d26031d553bfd2b70fe7d23826304cba324aebc40e6442fd2d"},
 ]
 
 [package.dependencies]
-cdislogging = ">=1.0.0,<2.0.0"
+cdislogging = "*"
+werkzeug = "*"
 
 [package.extras]
-flask = ["Flask (>=1.1.2,<2.0.0)"]
+flask = ["Flask"]
 
 [[package]]
 name = "cdislogging"
-version = "1.1.1"
-description = "Standardized logging tool and format for cdis applications"
+version = "1.2.0"
+description = "Standardized logging tool and format for CTDS applications"
 optional = false
-python-versions = "*"
+python-versions = "<4,>=3.13"
 groups = ["main"]
 files = [
-    {file = "cdislogging-1.1.1.tar.gz", hash = "sha256:77e11648244cda3a8094b8ae6081435a2303f259612846c49ef8825c7be141e3"},
+    {file = "cdislogging-1.2.0-py3-none-any.whl", hash = "sha256:3596addc972c3e65c738231381244089f84466e9c6e2662e096ad53154018f54"},
+    {file = "cdislogging-1.2.0.tar.gz", hash = "sha256:ca7511b685bbf0b4727fef85ca4eab78271b4618139a621b09c2846aed6d19d1"},
 ]
 
 [[package]]
 name = "certifi"
-version = "2025.11.12"
+version = "2026.1.4"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.7"
 groups = ["main", "dev"]
 files = [
-    {file = "certifi-2025.11.12-py3-none-any.whl", hash = "sha256:97de8790030bbd5c2d96b7ec782fc2f7820ef8dba6db909ccf95449f2d062d4b"},
-    {file = "certifi-2025.11.12.tar.gz", hash = "sha256:d8ab5478f2ecd78af242878415affce761ca6bc54a22a27e026d7c25357c3316"},
+    {file = "certifi-2026.1.4-py3-none-any.whl", hash = "sha256:9943707519e4add1115f44c2bc244f782c0249876bf51b6599fee1ffbedd685c"},
+    {file = "certifi-2026.1.4.tar.gz", hash = "sha256:ac726dd470482006e014ad384921ed6438c457018f4b3d204aea4281258b2120"},
 ]
 
 [[package]]
@@ -554,9 +557,10 @@ test-randomorder = ["pytest-randomly"]
 name = "datamodelutils"
 version = "1.1.2"
 description = "Gen3 Data Model Utils"
-optional = false
+optional = true
 python-versions = "<4,>=3.9"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "datamodelutils-1.1.2-py3-none-any.whl", hash = "sha256:eafac9c37cc550037ac801977d4ea16e89e9b27d629d0f751dd7e25ca7189dc9"},
     {file = "datamodelutils-1.1.2.tar.gz", hash = "sha256:273f4878d1f70b162fede3d1a35be69603b3f256c96d3ec7cb1fd25aa1e8fee2"},
@@ -602,19 +606,20 @@ requirements-parser = ">=0.11.0,<1"
 
 [[package]]
 name = "dictionaryutils"
-version = "3.5.1"
+version = "4.0.0"
 description = "Python wrapper and metaschema for datadictionary."
-optional = false
-python-versions = "<4,>=3.9"
+optional = true
+python-versions = "<4,>=3.13"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
-    {file = "dictionaryutils-3.5.1-py3-none-any.whl", hash = "sha256:a6d9b5cd81e3b29a087cb5deca8fef788a46a1e576a82b240bafd78cba37e8fb"},
-    {file = "dictionaryutils-3.5.1.tar.gz", hash = "sha256:c63a47479f671881f0f00aa7f647751239f02cbc930536246a30d349bc1ea34b"},
+    {file = "dictionaryutils-4.0.0-py3-none-any.whl", hash = "sha256:a6d1b2af957ffd2c66df42a1398fee1bd30b0268df82d9630236ed23286500a0"},
+    {file = "dictionaryutils-4.0.0.tar.gz", hash = "sha256:c846c48d534c7ae4a47d65b29cb7bb4324e998366e81ff5cc2175c94b1ea0c77"},
 ]
 
 [package.dependencies]
 cdislogging = "*"
-gen3dictionary = ">=2.0.4,<3.0.0"
+gen3dictionary = ">=3.0.0"
 jsonschema = "<=4.23.0"
 PyYAML = "*"
 requests = "*"
@@ -690,19 +695,20 @@ dotenv = ["python-dotenv"]
 
 [[package]]
 name = "gen3datamodel"
-version = "3.2.7"
+version = "4.0.0"
 description = ""
-optional = false
-python-versions = "<4,>=3.9"
+optional = true
+python-versions = "<4,>=3.13"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
-    {file = "gen3datamodel-3.2.7-py3-none-any.whl", hash = "sha256:9f8e3561f6327e0c65e3474c5619de1f25a5bcabc264f51d84067484af7ef1c7"},
-    {file = "gen3datamodel-3.2.7.tar.gz", hash = "sha256:0b04741631204db74b0c859445b5168c5b58c13f9a48e2f2397f5c246f74fa99"},
+    {file = "gen3datamodel-4.0.0-py3-none-any.whl", hash = "sha256:5e05002e0fd1ed4e4080e45bd461f3188e57615f6f2fb3095dfc9fa7441c869f"},
+    {file = "gen3datamodel-4.0.0.tar.gz", hash = "sha256:c91e9ebd58ab16bdea967c18b1eb91088eb1e829e9536822965ba47709518b8e"},
 ]
 
 [package.dependencies]
 cdislogging = "*"
-dictionaryutils = ">=3.5,<4"
+dictionaryutils = ">=4.0"
 jsonschema = "<5"
 psqlgraph = ">=3.0.2,<4"
 psycopg2-binary = ">=2.8.2,<4"
@@ -712,13 +718,15 @@ sqlalchemy = ">=1.3.3,<2"
 
 [[package]]
 name = "gen3dictionary"
-version = "2.0.4"
+version = "3.0.0"
 description = ""
-optional = false
-python-versions = "<4.0,>=3.9"
+optional = true
+python-versions = "<4,>=3.13"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
-    {file = "gen3dictionary-2.0.4.tar.gz", hash = "sha256:6a798008f32c4a5c1833fbc03e841ebe12bb5b743812ec7c00211c0268f15c05"},
+    {file = "gen3dictionary-3.0.0-py3-none-any.whl", hash = "sha256:5da0dcd78d7c86aaaa9b85810a4e816daa7748d66064b6f67ad96167341780ab"},
+    {file = "gen3dictionary-3.0.0.tar.gz", hash = "sha256:737a3f23445a81d9c7a566da0a8ca8c5d17c3fc0eed74b9819eff74836abc3e6"},
 ]
 
 [package.dependencies]
@@ -730,10 +738,10 @@ PyYAML = "*"
 name = "greenlet"
 version = "3.3.0"
 description = "Lightweight in-process concurrent programming"
-optional = false
+optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\""
+markers = "(platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\") and extra == \"datamodelutils\""
 files = [
     {file = "greenlet-3.3.0-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:6f8496d434d5cb2dce025773ba5597f71f5410ae499d5dd9533e0653258cdb3d"},
     {file = "greenlet-3.3.0-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b96dc7eef78fd404e022e165ec55327f935b9b52ff355b067eb4a0267fc1cffb"},
@@ -911,9 +919,10 @@ i18n = ["Babel (>=2.7)"]
 name = "jsonschema"
 version = "4.23.0"
 description = "An implementation of JSON Schema validation for Python"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "jsonschema-4.23.0-py3-none-any.whl", hash = "sha256:fbadb6f8b144a8f8cf9f0b89ba94501d143e50411a1278633f56a7acf7fd5566"},
     {file = "jsonschema-4.23.0.tar.gz", hash = "sha256:d71497fef26351a33265337fa77ffeb82423f3ea21283cd9467bb03999266bc4"},
@@ -933,9 +942,10 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 name = "jsonschema-specifications"
 version = "2025.9.1"
 description = "The JSON Schema meta-schemas and vocabularies, exposed as a Registry"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "jsonschema_specifications-2025.9.1-py3-none-any.whl", hash = "sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe"},
     {file = "jsonschema_specifications-2025.9.1.tar.gz", hash = "sha256:b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d"},
@@ -1092,9 +1102,10 @@ testing = ["coverage", "pytest", "pytest-benchmark"]
 name = "psqlgraph"
 version = "3.1.1"
 description = ""
-optional = false
+optional = true
 python-versions = "<4,>=3.9"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "psqlgraph-3.1.1-py3-none-any.whl", hash = "sha256:7dabef92137abfea7dff94f618a78b5beb4d305987bd80917b8f4a6bca49ae1a"},
     {file = "psqlgraph-3.1.1.tar.gz", hash = "sha256:9bb72ee1206ac04b5546be8ef099617c8254788dbd52cf1226f19169a1f14b09"},
@@ -1111,9 +1122,10 @@ xlocal = "0.5"
 name = "psycopg2-binary"
 version = "2.9.11"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "psycopg2-binary-2.9.11.tar.gz", hash = "sha256:b6aed9e096bf63f9e75edf2581aa9a7e7186d97ab5c177aa6c87797cd591236c"},
     {file = "psycopg2_binary-2.9.11-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d6fe6b47d0b42ce1c9f1fa3e35bb365011ca22e39db37074458f27921dca40f2"},
@@ -1509,9 +1521,10 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 name = "pytz"
 version = "2025.2"
 description = "World timezone definitions, modern and historical"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00"},
     {file = "pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3"},
@@ -1521,9 +1534,10 @@ files = [
 name = "pyyaml"
 version = "6.0.3"
 description = "YAML parser and emitter for Python"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "PyYAML-6.0.3-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:c2514fceb77bc5e7a2f7adfaa1feb2fb311607c9cb518dbc378688ec73d8292f"},
     {file = "PyYAML-6.0.3-cp38-cp38-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9c57bb8c96f6d1808c030b1687b9b5fb476abaa47f0db9c0101f5e9f394e97f4"},
@@ -1604,9 +1618,10 @@ files = [
 name = "referencing"
 version = "0.37.0"
 description = "JSON Referencing + Python"
-optional = false
+optional = true
 python-versions = ">=3.10"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "referencing-0.37.0-py3-none-any.whl", hash = "sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231"},
     {file = "referencing-0.37.0.tar.gz", hash = "sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8"},
@@ -1657,9 +1672,10 @@ packaging = ">=23.2"
 name = "rfc3339-validator"
 version = "0.1.4"
 description = "A pure python RFC3339 validator"
-optional = false
+optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "rfc3339_validator-0.1.4-py2.py3-none-any.whl", hash = "sha256:24f6ec1eda14ef823da9e36ec7113124b39c04d50a4d3d3a3c2859577e7791fa"},
     {file = "rfc3339_validator-0.1.4.tar.gz", hash = "sha256:138a2abdf93304ad60530167e51d2dfb9549521a836871b88d7f4695d0022f6b"},
@@ -1672,9 +1688,10 @@ six = "*"
 name = "rpds-py"
 version = "0.30.0"
 description = "Python bindings to Rust's persistent data structures (rpds)"
-optional = false
+optional = true
 python-versions = ">=3.10"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "rpds_py-0.30.0-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:679ae98e00c0e8d68a7fda324e16b90fd5260945b45d3b824c892cec9eea3288"},
     {file = "rpds_py-0.30.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:4cc2206b76b4f576934f0ed374b10d7ca5f457858b157ca52064bdfc26b9fc00"},
@@ -1797,9 +1814,10 @@ files = [
 name = "rstr"
 version = "3.2.2"
 description = "Generate random strings in Python"
-optional = false
+optional = true
 python-versions = ">=3.7"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "rstr-3.2.2-py3-none-any.whl", hash = "sha256:f39195d38da1748331eeec52f1276e71eb6295e7949beea91a5e9af2340d7b3b"},
     {file = "rstr-3.2.2.tar.gz", hash = "sha256:c4a564d4dfb4472d931d145c43d1cf1ad78c24592142e7755b8866179eeac012"},
@@ -1809,9 +1827,10 @@ files = [
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
-optional = false
+optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
     {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
@@ -1821,9 +1840,10 @@ files = [
 name = "sqlalchemy"
 version = "1.4.54"
 description = "Database Abstraction Library"
-optional = false
+optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.7"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "SQLAlchemy-1.4.54-cp310-cp310-macosx_12_0_x86_64.whl", hash = "sha256:af00236fe21c4d4f4c227b6ccc19b44c594160cc3ff28d104cdce85855369277"},
     {file = "SQLAlchemy-1.4.54-cp310-cp310-manylinux1_x86_64.manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_5_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1183599e25fa38a1a322294b949da02b4f0da13dbc2688ef9dbe746df573f8a6"},
@@ -1957,14 +1977,14 @@ typing-extensions = ">=4.12.0"
 
 [[package]]
 name = "urllib3"
-version = "2.6.2"
+version = "2.6.3"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "urllib3-2.6.2-py3-none-any.whl", hash = "sha256:ec21cddfe7724fc7cb4ba4bea7aa8e2ef36f607a4bab81aa6ce42a13dc3f03dd"},
-    {file = "urllib3-2.6.2.tar.gz", hash = "sha256:016f9c98bb7e98085cb2b4b17b87d2c702975664e4f060c6532e64d1c1a5e797"},
+    {file = "urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"},
+    {file = "urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed"},
 ]
 
 [package.extras]
@@ -1975,14 +1995,14 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 
 [[package]]
 name = "werkzeug"
-version = "3.1.4"
+version = "3.1.5"
 description = "The comprehensive WSGI web application library."
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "werkzeug-3.1.4-py3-none-any.whl", hash = "sha256:2ad50fb9ed09cc3af22c54698351027ace879a0b60a3b5edf5730b2f7d876905"},
-    {file = "werkzeug-3.1.4.tar.gz", hash = "sha256:cd3cd98b1b92dc3b7b3995038826c68097dcb16f9baa63abe35f20eafeb9fe5e"},
+    {file = "werkzeug-3.1.5-py3-none-any.whl", hash = "sha256:5111e36e91086ece91f93268bb39b4a35c1e6f1feac762c9c822ded0a4e322dc"},
+    {file = "werkzeug-3.1.5.tar.gz", hash = "sha256:6a548b0e88955dd07ccb25539d7d0cc97417ee9e179677d22c7041c8f078ce67"},
 ]
 
 [package.dependencies]
@@ -1995,9 +2015,10 @@ watchdog = ["watchdog (>=2.3)"]
 name = "xlocal"
 version = "0.5"
 description = "execution locals: killing global state (including thread locals)"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
+markers = "extra == \"datamodelutils\""
 files = [
     {file = "xlocal-0.5.zip", hash = "sha256:8ee1c1551294e366a3c307985ea2129e72717556a5736063c0e089c5fb868405"},
 ]
@@ -2015,10 +2036,11 @@ files = [
 ]
 
 [extras]
+datamodelutils = ["datamodelutils"]
 fastapi = ["fastapi"]
 flask = ["Flask"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13, <4.0"
-content-hash = "664b0edbc6c642ed58ffd6fdf3daf20b1f3f3a872bbf78f56d4296d60af80a79"
+content-hash = "60b13391d51c92f624bae7264edfc3488c24782f1c389b5b74f256f5ce19c0d1"
