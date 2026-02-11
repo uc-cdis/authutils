@@ -18,7 +18,7 @@ authlib = ">=1.6.5"
 httpx = ">=0.23.0,<1.0.0"
 pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 # specify cryptography (dependency of authlib and pyjwt) for snyk issue
-cryptography = "^44.0.1"
+cryptography = ">=44.0.1,<47.0.0"
 
 #Pegging flask to < 2.3.3 so pytest-flask 1.2.0 (latest on 10-09-2023) could work
 #https://github.com/pytest-dev/pytest-flask/issues/167
