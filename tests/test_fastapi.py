@@ -50,7 +50,15 @@ def test_no_scopes():
 
 
 def test_no_header(async_client):
-    assert async_client.get("/whoami").status_code == 403
+    """
+    Test 40x response when no header is provided at all.
+
+    Note: Different versions of FastAPI have different response status codes.
+          We really just want to verify it's one of them.
+
+    https://fastapi.tiangolo.com/how-to/authentication-error-status-code/#use-old-403-authentication-error-status-codes
+    """
+    assert async_client.get("/whoami").status_code in {403, 401}
 
 
 def test_no_issuers_whitelist(auth_header, async_client, claims):
