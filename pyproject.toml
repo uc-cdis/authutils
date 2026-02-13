@@ -20,7 +20,7 @@ pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 cryptography = ">=46.0.0"
 
 Flask = {version = "*", optional = true}
-fastapi = {version = "^0.65.2", optional = true}
+fastapi = {version = "*", optional = true}
 datamodelutils = { version = "*", optional = true }
 
 [tool.poetry.extras]
@@ -30,12 +30,11 @@ datamodelutils = ["datamodelutils"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
-fastapi = ">=0.0.0,<1.0.0"
-mock = "^4.0.2"
+mock = "*"
 pytest-cov = "*"
 pytest-flask = "*"
-requests = "^2.23.0"
-deptry = "^0.24.0"
+requests = "*"
+deptry = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]
