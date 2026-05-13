@@ -16,7 +16,12 @@ _jwt_public_keys = {}
 
 
 def access_token(
-    *scopes, audience=None, issuer=None, allowed_issuers=None, purpose=None, force_issuer=None
+    *scopes,
+    audience=None,
+    issuer=None,
+    allowed_issuers=None,
+    purpose=None,
+    force_issuer=None
 ):
     """
     Validate and return the JWT bearer token in HTTP header::
@@ -29,11 +34,13 @@ def access_token(
 
     Args:
         *scopes: Required, all must occur in ``scope``.
-        audience: Optional; parameter present for backwards compatibility; the
-          audience is not validated anymore
+        audience: Optional; if provided, JWT validation will require that the token's
+          ``aud`` value contains the arg value; if not provided, validation will require
+          that the token not have an aud field.
         issuer: Optional; force to use this issuer to validate the token if provided.
         allowed_issuers: Optional allowed issuers whitelist, default: allow all.
         purpose: Optional, must match ``pur`` if provided.
+        force_issuer: Optional
 
     Returns:
         Decoded JWT claims as a :class:`dict`.

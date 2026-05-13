@@ -82,8 +82,12 @@ def validate_jwt(
     Args:
         encoded_token (str): the base64 encoding of the token
         aud (Optional[str]):
-            parameter present for backwards compatibility; the audience
-            is not validated anymore
+            audience as which the app identifies, which the JWT will be
+            expected to include in its ``aud`` claim.
+            Optional; will default to issuer from flask.current_app.config
+            if available (either BASE_URL or USER_API).
+            To skip aud validation, pass the following in the options arg:
+              options={"verify_aud": False}
         scope (Optional[Iterable[str]]):
             scopes that the token must satisfy
         purpose (Optional[str]):

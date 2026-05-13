@@ -42,7 +42,7 @@ def default_audience():
     """
     Return default audience to pass to core.validate_jwt calls.
     """
-    return USER_API
+    return "gen3"
 
 
 @pytest.fixture(scope="session")
