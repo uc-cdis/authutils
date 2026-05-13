@@ -147,6 +147,8 @@ def validate_request(scope={}, audience=None, purpose="access", logger=None):
         raise JWTError(msg)
 
     # Pass token to ``validate_jwt``.
+    print("validate_request audience:", audience)
+    print("validate_request encoded_token:", encoded_token)
     return validate_jwt(
         encoded_token,
         aud=audience,
@@ -177,6 +179,7 @@ def require_auth_header(scope={}, audience=None, purpose=None, logger=None):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
+            print("require_auth_header scope:", scope, ", audience:", audience)
             set_current_token(
                 validate_request(
                     scope=scope, audience=audience, purpose=purpose, logger=logger
