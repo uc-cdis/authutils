@@ -12,6 +12,7 @@ from authutils.token.validate import set_current_token, validate_request
 
 def set_current_user(**kwargs):
     # If not already passed an aud to expect, default to the generic "gen3" aud
+    # TODO: see if we can remove this line
     kwargs.setdefault("jwt_kwargs", {}).setdefault("audience", "gen3")
 
     flask.g.user = CurrentUser(**kwargs)
@@ -22,7 +23,7 @@ def set_current_user(**kwargs):
 # Proxy for the current user.
 #
 # Other modules importing authutils can import ``current_user`` from here,
-# which will use ``_get_or_set_current_user`` to look up the user.
+# which will use ``set_current_user`` to look up the user.
 current_user = LocalProxy(set_current_user)
 
 

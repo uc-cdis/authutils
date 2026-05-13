@@ -142,7 +142,7 @@ def auth_header(encoded_jwt):
 
 
 @pytest.fixture(scope="function")
-def app():
+def app(default_audience):
     """
     Set up a basic flask app for testing.
     """
@@ -153,7 +153,7 @@ def app():
     app.config["BASE_URL"] = USER_API
 
     @app.route("/test")
-    @require_auth_header({"test_scope"}, USER_API, "access")
+    @require_auth_header({"test_scope"}, default_audience, "access")
     def test_endpoint():
         """
         Define a simple endpoint for testing which requires a JWT header for
