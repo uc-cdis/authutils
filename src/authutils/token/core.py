@@ -94,7 +94,7 @@ def validate_jwt(
     Args:
         encoded_token (str): encoded JWT
         public_key (str): public key to validate the JWT signature
-        aud (Optional[str]):
+        aud (Optional[str|list]):
           audience with which the app identifies, usually an OIDC
           client id, which the JWT will be expected to include in its ``aud``
           claim. Optional; if no ``aud`` argument given, then the JWT must
@@ -117,9 +117,9 @@ def validate_jwt(
     """
 
     # Typecheck arguments.
-    if not isinstance(aud, str) and not aud is None:
+    if not isinstance(aud, str) and not isinstance(aud, list) and not aud is None:
         raise ValueError(
-            "aud must be string or None. Instead received aud of type {}".format(
+            "aud must be string, list or None. Instead received aud of type {}".format(
                 type(aud)
             )
         )
