@@ -129,7 +129,7 @@ def validate_jwt(
     return claims
 
 
-def validate_request(scope={}, audience=None, purpose="access", logger=None):
+def validate_request(scope=set(), audience=None, purpose="access", logger=None):
     """
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
@@ -147,8 +147,8 @@ def validate_request(scope={}, audience=None, purpose="access", logger=None):
         raise JWTError(msg)
 
     # Pass token to ``validate_jwt``.
-    print("validate_request audience:", audience)
-    print("validate_request encoded_token:", encoded_token)
+    # TODO: don't forget to also update go-authutils to validate the aud.
+    # (see https://github.com/uc-cdis/go-authutils/pull/3)
     return validate_jwt(
         encoded_token,
         aud=audience,
@@ -158,7 +158,7 @@ def validate_request(scope={}, audience=None, purpose="access", logger=None):
     )
 
 
-def require_auth_header(scope={}, audience=None, purpose=None, logger=None):
+def require_auth_header(scope=set(), audience=None, purpose=None, logger=None):
     """
     Return a decorator which adds request validation to check the given
     scopes, audience and purpose (all optional).
