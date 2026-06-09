@@ -82,10 +82,9 @@ def validate_jwt(
     Args:
         encoded_token (str): the base64 encoding of the token
         aud (Optional[str]):
-            audience as which the app identifies, which the JWT will be
-            expected to include in its ``aud`` claim.
-            Optional; will default to issuer from flask.current_app.config
-            if available (either BASE_URL or USER_API).
+            if provided, JWT validation will require that the token's ``aud`` value
+            contains the arg value; if not provided, validation will require that
+            the token not have an aud field.
             To skip aud validation, pass the following in the options arg:
               options={"verify_aud": False}
         scope (Optional[Iterable[str]]):
@@ -179,7 +178,6 @@ def require_auth_header(scope=set(), audience=None, purpose=None, logger=None):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            print("require_auth_header scope:", scope, ", audience:", audience)
             set_current_token(
                 validate_request(
                     scope=scope, audience=audience, purpose=purpose, logger=logger

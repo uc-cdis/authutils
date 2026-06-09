@@ -11,10 +11,6 @@ from authutils.token.validate import set_current_token, validate_request
 
 
 def set_current_user(**kwargs):
-    # If not already passed an aud to expect, default to the generic "gen3" aud
-    # TODO: see if we can remove this line
-    kwargs.setdefault("jwt_kwargs", {}).setdefault("audience", "gen3")
-
     flask.g.user = CurrentUser(**kwargs)
     set_current_token(flask.g.user._claims)
     return flask.g.user

@@ -95,10 +95,9 @@ def validate_jwt(
         encoded_token (str): encoded JWT
         public_key (str): public key to validate the JWT signature
         aud (Optional[str|list]):
-          audience with which the app identifies, usually an OIDC
-          client id, which the JWT will be expected to include in its ``aud``
-          claim. Optional; if no ``aud`` argument given, then the JWT must
-          not have an ``aud`` claim, or validation will fail.
+          if provided, JWT validation will require that the token's ``aud`` value
+          contains the arg value; if not provided, validation will require that
+          the token not have an aud field.
         scope (Optional[Iterable[str]]):
           set of scopes, each of which the JWT must satisfy in its
           ``scope`` claim. Optional.
