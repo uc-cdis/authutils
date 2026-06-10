@@ -157,10 +157,22 @@ def validate_request(scope=set(), audience=None, purpose="access", logger=None):
     )
 
 
-def require_auth_header(scope=set(), audience=None, purpose=None, logger=None):
+def require_auth_header(
+    scope=set(), audience=None, purpose=None, logger=None, raise_jwt_err=True
+):
     """
     Return a decorator which adds request validation to check the given
     scopes, audience and purpose (all optional).
+
+    Args:
+        audience (Optional[str|set])
+        audience (Optional[str|list])
+        purpose (Optional[str])
+        logger (Optional)
+        raise_jwt_err (Optional[bool]; default True):
+            If False, JWTErrors are logged but not thrown, and the current token is set to None.
+            This is useful in cases where we want to proceed with the function call even if the
+            provided authorization header is invalid.
     """
     logger = logger or get_logger(__name__, log_level="info")
 
@@ -179,18 +191,25 @@ def require_auth_header(scope=set(), audience=None, purpose=None, logger=None):
             token (see top of this file).
             """
             try:
-                set_current_token(
-                    validate_request(
-                        scope=scope, audience=audience, purpose=purpose, logger=logger
-                    )
+                token = validate_request(
+                    scope=scope, audience=audience, purpose=purpose, logger=logger
                 )
+            except JWTError as e:
+                if raise_jwt_err:
+                    raise
+                else:
+                    logger.warning(
+                        f"Ignoring JWTError during `authutils.require_auth_header.validate_request()`: {e}"
+                    )
+                    token = None
             except Exception as e:
                 # since this is used as a decorator directly on API routes, the raw stack trace
                 # can be difficult to interpret since it does not include `require_auth_header`
                 logger.error(
-                    f"Error during `authutils.require_auth_header at set_current_token(validate_request)`: {e}"
+                    f"Error during `authutils.require_auth_header.validate_request()`: {e}"
                 )
                 raise
+            set_current_token(token)
             return f(*args, **kwargs)
 
         return wrapper
