@@ -178,11 +178,19 @@ def require_auth_header(scope=set(), audience=None, purpose=None, logger=None):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            set_current_token(
-                validate_request(
-                    scope=scope, audience=audience, purpose=purpose, logger=logger
+            try:
+                set_current_token(
+                    validate_request(
+                        scope=scope, audience=audience, purpose=purpose, logger=logger
+                    )
                 )
-            )
+            except Exception as e:
+                # since this is used as a decorator directly on API routes, the raw stack trace
+                # can be difficult to interpret since it does not include `require_auth_header`
+                logger.error(
+                    f"Error during `authutils.require_auth_header at set_current_token(validate_request)`: {e}"
+                )
+                raise
             return f(*args, **kwargs)
 
         return wrapper
