@@ -146,8 +146,6 @@ def validate_request(scope=set(), audience=None, purpose="access", logger=None):
         raise JWTError(msg)
 
     # Pass token to ``validate_jwt``.
-    # TODO: don't forget to also update go-authutils to validate the aud.
-    # (see https://github.com/uc-cdis/go-authutils/pull/3)
     return validate_jwt(
         encoded_token,
         aud=audience,
