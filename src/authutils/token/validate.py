@@ -161,7 +161,7 @@ def require_auth_header(scope=set(), audience=None, purpose=None, logger=None):
     scopes, audience and purpose (all optional).
 
     Args:
-        audience (Optional[str|set])
+        scope (Optional[str|set])
         audience (Optional[str|list])
         purpose (Optional[str])
         logger (Optional)
