@@ -28,7 +28,7 @@ flask = ["Flask"]
 fastapi = ["fastapi"]
 datamodelutils = ["datamodelutils"]
 
-[tool.poetry.group.dev.dependencies]poetry install
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 mock = "*"
 pytest-cov = "*"
