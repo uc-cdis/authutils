@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "authutils"
-version = "7.2.7"
+version = "7.2.8"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -28,7 +28,7 @@ flask = ["Flask"]
 fastapi = ["fastapi"]
 datamodelutils = ["datamodelutils"]
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.group.dev.dependencies]poetry install
 pytest = "*"
 mock = "*"
 pytest-cov = "*"
