@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import os
 import uuid
 
+from authutils.user import DEFAULT_TOKEN_AUDIENCE
 import flask
 import jwt
 import mock
@@ -42,7 +43,7 @@ def default_audience():
     """
     Return default audience to pass to core.validate_jwt calls.
     """
-    return "gen3"
+    return DEFAULT_TOKEN_AUDIENCE
 
 
 @pytest.fixture(scope="session")

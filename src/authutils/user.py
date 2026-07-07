@@ -9,10 +9,12 @@ from werkzeug.local import LocalProxy
 from authutils.errors import AuthError
 from authutils.token.validate import set_current_token, validate_request
 
+DEFAULT_TOKEN_AUDIENCE = "gen3"
+
 
 def set_current_user(**kwargs):
-    # If not already passed an aud to expect, default to the generic "gen3" aud
-    kwargs.setdefault("jwt_kwargs", {}).setdefault("audience", "gen3")
+    # Fallback to DEFAULT_TOKEN_AUDIENCE if no JWT audience is provided.
+    kwargs.setdefault("jwt_kwargs", {}).setdefault("audience", DEFAULT_TOKEN_AUDIENCE)
 
     flask.g.user = CurrentUser(**kwargs)
     set_current_token(flask.g.user._claims)
