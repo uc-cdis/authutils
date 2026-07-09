@@ -82,8 +82,11 @@ def validate_jwt(
     Args:
         encoded_token (str): the base64 encoding of the token
         aud (Optional[str]):
-            parameter present for backwards compatibility; the audience
-            is not validated anymore
+            if provided, JWT validation will require that the token's ``aud`` value
+            contains the arg value; if not provided, validation will require that
+            the token not have an aud field.
+            To skip aud validation, pass the following in the options arg:
+              options={"verify_aud": False}
         scope (Optional[Iterable[str]]):
             scopes that the token must satisfy
         purpose (Optional[str]):
@@ -125,7 +128,7 @@ def validate_jwt(
     return claims
 
 
-def validate_request(scope={}, audience=None, purpose="access", logger=None):
+def validate_request(scope=set(), audience=None, purpose="access", logger=None):
     """
     Validate a ``flask.request`` by checking the JWT contained in the request
     headers.
@@ -152,10 +155,16 @@ def validate_request(scope={}, audience=None, purpose="access", logger=None):
     )
 
 
-def require_auth_header(scope={}, audience=None, purpose=None, logger=None):
+def require_auth_header(scope=set(), audience=None, purpose=None, logger=None):
     """
     Return a decorator which adds request validation to check the given
     scopes, audience and purpose (all optional).
+
+    Args:
+        scope (Optional[str|set])
+        audience (Optional[str|list])
+        purpose (Optional[str])
+        logger (Optional)
     """
     logger = logger or get_logger(__name__, log_level="info")
 
@@ -173,11 +182,19 @@ def require_auth_header(scope={}, audience=None, purpose=None, logger=None):
             the code inside the function can use the ``LocalProxy`` for the
             token (see top of this file).
             """
-            set_current_token(
-                validate_request(
-                    scope=scope, audience=audience, purpose=purpose, logger=logger
+            try:
+                set_current_token(
+                    validate_request(
+                        scope=scope, audience=audience, purpose=purpose, logger=logger
+                    )
                 )
-            )
+            except Exception as e:
+                # since this is used as a decorator directly on API routes, the raw stack trace
+                # can be difficult to interpret since it does not include `require_auth_header`
+                logger.error(
+                    f"Error during `authutils.require_auth_header at set_current_token(validate_request)`: {e}"
+                )
+                raise
             return f(*args, **kwargs)
 
         return wrapper

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import os
 import uuid
 
+from authutils.user import DEFAULT_TOKEN_AUDIENCE
 import flask
 import jwt
 import mock
@@ -42,7 +43,7 @@ def default_audience():
     """
     Return default audience to pass to core.validate_jwt calls.
     """
-    return USER_API
+    return DEFAULT_TOKEN_AUDIENCE
 
 
 @pytest.fixture(scope="session")
@@ -142,7 +143,7 @@ def auth_header(encoded_jwt):
 
 
 @pytest.fixture(scope="function")
-def app():
+def app(default_audience):
     """
     Set up a basic flask app for testing.
     """
@@ -153,7 +154,7 @@ def app():
     app.config["BASE_URL"] = USER_API
 
     @app.route("/test")
-    @require_auth_header({"test_scope"}, USER_API, "access")
+    @require_auth_header({"test_scope"}, default_audience, "access")
     def test_endpoint():
         """
         Define a simple endpoint for testing which requires a JWT header for

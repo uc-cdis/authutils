@@ -7,7 +7,7 @@ from authutils.token.fastapi import access_token
 
 
 @pytest.fixture(scope="function")
-def async_client(default_scopes, mock_async_get, iss):
+def async_client(default_scopes, default_audience, mock_async_get, iss):
     mock_async_get()
 
     app = fastapi.FastAPI()
@@ -15,7 +15,7 @@ def async_client(default_scopes, mock_async_get, iss):
     @app.get("/whoami")
     def whoami(
         token=fastapi.Depends(
-            access_token(*default_scopes, audience=iss, purpose="access")
+            access_token(*default_scopes, audience=default_audience, purpose="access")
         )
     ):
         return token
@@ -23,7 +23,9 @@ def async_client(default_scopes, mock_async_get, iss):
     @app.get("/force_issuer")
     def force_issuer(
         token=fastapi.Depends(
-            access_token(*default_scopes, audience=iss, issuer=iss, purpose="access")
+            access_token(
+                *default_scopes, audience=default_audience, issuer=iss, purpose="access"
+            )
         )
     ):
         return token

@@ -9,8 +9,13 @@ from werkzeug.local import LocalProxy
 from authutils.errors import AuthError
 from authutils.token.validate import set_current_token, validate_request
 
+DEFAULT_TOKEN_AUDIENCE = "gen3"
+
 
 def set_current_user(**kwargs):
+    # Fallback to DEFAULT_TOKEN_AUDIENCE if no JWT audience is provided.
+    kwargs.setdefault("jwt_kwargs", {}).setdefault("audience", DEFAULT_TOKEN_AUDIENCE)
+
     flask.g.user = CurrentUser(**kwargs)
     set_current_token(flask.g.user._claims)
     return flask.g.user
@@ -19,7 +24,7 @@ def set_current_user(**kwargs):
 # Proxy for the current user.
 #
 # Other modules importing authutils can import ``current_user`` from here,
-# which will use ``_get_or_set_current_user`` to look up the user.
+# which will use ``set_current_user`` to look up the user.
 current_user = LocalProxy(set_current_user)
 
 
