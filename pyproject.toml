@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "authutils"
-version = "8.0.0"
+version = "8.1.0"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -22,6 +22,7 @@ cryptography = ">=48.0.1"
 Flask = {version = "*", optional = true}
 fastapi = {version = "*", optional = true}
 datamodelutils = { version = "*", optional = true }
+joserfc = ">=1.7.3"
 
 [tool.poetry.extras]
 flask = ["Flask"]

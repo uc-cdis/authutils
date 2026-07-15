@@ -24,6 +24,8 @@ For example:
 import base64
 import json
 from collections import OrderedDict
+import time
+
 
 from cdislogging import get_logger
 
@@ -42,6 +44,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from authutils.errors import JWTError
 from .core import get_keys_url, get_kid, get_iss
+
+# In-memory cache for token public key lookups (with TTL)
+# Maps "issuer:kid" to {"key": pem_key, "expires_at": timestamp}
+_token_public_key_cache = {}
+# Maximum number of entries to cache to prevent memory overload
+_TOKEN_PUBLIC_KEY_CACHE_MAX_SIZE = 100
 
 
 def get_pem_key(key, logger=None):
@@ -301,3 +309,137 @@ def get_public_key_for_token(
         pkey_cache=pkey_cache,
         logger=logger,
     )
+
+
+def get_any_public_key_for_token(encoded_token, cache_ttl: int = 300, logger=None):
+    """
+    Get the public key for a token (generalized for any web framework, e.g. without
+    requiring Flask context like the above function).
+
+    It includes a simple in-memory cache with TTL to avoid excessive network requests.
+
+    Decouples public key fetching from Flask,
+    enabling token validation in non-Flask environments (FastAPI, async contexts, etc).
+
+    Args:
+        encoded_token (str): Encoded JWT token.
+        cache_ttl (int): Cache time-to-live in seconds (default: 300s / 5 minutes).
+        logger (Optional): Logger instance. Defaults to module logger.
+
+    Returns:
+        bytes: Public key in PEM format.
+
+    Raises:
+        JWTError: If the token is malformed or the public key cannot be fetched.
+    """
+    logger = logger or get_logger(__name__, log_level="info")
+
+    try:
+        iss = get_iss(encoded_token)
+        kid = get_kid(encoded_token)
+    except JWTError as e:
+        raise JWTError(f"Could not extract issuer/kid from token: {str(e)}")
+
+    if not iss:
+        raise JWTError("Token is missing issuer (iss claim)")
+
+    cache_key = f"{iss}:{kid}"
+
+    # Try to retrieve from cache
+    cached_key = _get_public_key_from_cache(cache_key, logger)
+    if cached_key is not None:
+        return cached_key
+
+    logger.debug(f"cache miss. attempting to get keys URL from iss: {iss}...")
+    keys_url = get_keys_url(iss)
+
+    # TODO: check keys URL against an allowlist of domains
+
+    try:
+        # Fetch JWKS from issuer
+        logger.info(f"hitting keys URL from iss: {iss}, keys_url: {keys_url}...")
+        response = httpx.get(keys_url)
+        response.raise_for_status()
+        jwks_data = response.json()
+        keys = jwks_data.get("keys", [])
+    except Exception as e:
+        raise JWTError(f"Could not fetch JWKS from {keys_url}: {str(e)}")
+
+    if not keys:
+        raise JWTError(f"Got no keys from {keys_url} for iss: {iss}")
+
+    # Find the key with matching kid or use the first key
+    for key_data in keys:
+        if key_data.get("kid") == kid or (kid is None and keys):
+            _, pem_key = get_pem_key(key_data, logger)
+
+            # Save to cache with TTL and size limiting
+            _save_public_key_to_cache(cache_key, pem_key, cache_ttl, logger)
+
+            return pem_key
+
+    raise JWTError(f"No public key found for kid={kid} at issuer {iss}")
+
+
+def _get_public_key_from_cache(cache_key: str, logger=None) -> bytes | None:
+    """
+    Retrieve a public key from cache if it exists and hasn't expired.
+
+    Args:
+        cache_key (str): Cache key in format "issuer:kid".
+        logger (Optional): Logger instance.
+
+    Returns:
+        bytes | None: Public key in PEM format if valid entry exists, None otherwise.
+    """
+    if cache_key not in _token_public_key_cache:
+        return None
+
+    cached_entry = _token_public_key_cache[cache_key]
+    if time.time() < cached_entry["expires_at"]:
+        if logger:
+            logger.debug(f"Using cached public key for {cache_key}")
+        return cached_entry["key"]
+    else:
+        del _token_public_key_cache[cache_key]
+        return None
+
+
+def _save_public_key_to_cache(
+    cache_key: str, pem_key: bytes, cache_ttl: int, logger=None
+) -> None:
+    """
+    Save a public key to cache with TTL, enforcing cache size limits via LRU eviction.
+
+    Args:
+        cache_key (str): Cache key in format "issuer:kid".
+        pem_key (bytes): Public key in PEM format.
+        cache_ttl (int): Cache time-to-live in seconds.
+        logger (Optional): Logger instance.
+
+    Side Effects:
+        - Adds entry to _token_public_key_cache.
+        - May evict oldest entry if cache is at capacity.
+    """
+    # Enforce cache size limit: remove oldest entry if at capacity
+    if len(_token_public_key_cache) >= _TOKEN_PUBLIC_KEY_CACHE_MAX_SIZE:
+        # Find and remove the oldest entry (earliest expires_at)
+        oldest_key = None
+        oldest_expiration = float("inf")
+        for cached_key, cached_entry in _token_public_key_cache.items():
+            if cached_entry["expires_at"] < oldest_expiration:
+                oldest_expiration = cached_entry["expires_at"]
+                oldest_key = cached_key
+        if oldest_key is not None:
+            del _token_public_key_cache[oldest_key]
+            if logger:
+                logger.debug(
+                    f"Cache at capacity ({_TOKEN_PUBLIC_KEY_CACHE_MAX_SIZE}), "
+                    f"evicted oldest entry: {oldest_key}"
+                )
+
+    # Cache the key
+    _token_public_key_cache[cache_key] = {
+        "key": pem_key,
+        "expires_at": time.time() + cache_ttl,
+    }
