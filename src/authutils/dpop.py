@@ -24,7 +24,7 @@ import json
 import os
 import base64
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from urllib.parse import urlparse
 
 from joserfc import jwt, jwk, jws
@@ -213,7 +213,7 @@ def validate_dpop_proof(
     request_url: str,
     unvalidated_access_token: str | None = None,
     require_nonce: bool = False,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], jwk.Key]:
     """
     Validate a DPoP proof JWT for a resource server request.
 
@@ -238,7 +238,7 @@ def validate_dpop_proof(
         require_nonce (bool): Whether to require and validate a nonce.
 
     Returns:
-        Dict[str, Any]: dict with decoded claims dict.
+        Dict[str, Any], jwk.Key: dict with decoded claims dict, validated client_jwk from dpop header
 
     Raises:
         ValueError: If any validation fails.
@@ -250,6 +250,9 @@ def validate_dpop_proof(
         ...     request_url="https://api.example.com/ga4gh/tes/v1/jobs",
         ... )
     """
+    if not dpop_header:
+        raise ValueError("Invalid DPoP proof: Empty string / None provided")
+
     client_jwk = extract_and_validate_jwk(dpop_header)
 
     dpop_claims = _verify_signature_and_claims(dpop_header, client_jwk)
@@ -263,7 +266,7 @@ def validate_dpop_proof(
         _validate_ath(dpop_claims, unvalidated_access_token)
         _validate_key_binding(client_jwk, unvalidated_access_token)
 
-    return dpop_claims
+    return dpop_claims, client_jwk
 
 
 def _validate_key_binding(

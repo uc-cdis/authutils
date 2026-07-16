@@ -13,7 +13,7 @@ from joserfc import jwk, jwt
 
 import authutils.dpop
 from authutils.token import dpop_nonce
-from authutils.dpop import DPOP_PROOF_MAX_TTL, DPOP_PROOF_CLOCK_SKEW_LEEWAY
+from authutils.dpop import DPOP_PROOF_MAX_TTL
 
 
 @pytest.fixture(autouse=True)
@@ -24,6 +24,71 @@ def set_shared_secret():
     ] = "test-secret-32chars-minimum-test"  # pragma: allowlist secret
     yield
     os.environ.pop("DPOP_SHARED_SECRET", None)
+
+
+class TestValidateDpopProofSuccess:
+    """Tests for successful validate_dpop_proof calls that verify return values."""
+
+    def test_returns_dpop_claims_and_client_jwk_tuple(self):
+        """
+        Test that validate_dpop_proof returns a tuple of (dpop_claims, client_jwk).
+        This allows callers to get both values in a single call without needing
+        to call both validate_dpop_proof and extract_and_validate_jwk separately.
+        """
+        key = jwk.ECKey.generate_key(crv="P-256")
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource"
+        )
+
+        # Call validate_dpop_proof and verify it returns a tuple
+        result = authutils.dpop.validate_dpop_proof(
+            proof, "GET", "https://example.com/resource"
+        )
+
+        # Verify return type is a tuple
+        assert isinstance(result, tuple), "validate_dpop_proof should return a tuple"
+
+        # Verify tuple has exactly 2 elements
+        assert len(result) == 2, "validate_dpop_proof should return a 2-element tuple"
+
+        # Verify first element is the dpop claims dict
+        dpop_claims, client_jwk = result
+        assert isinstance(
+            dpop_claims, dict
+        ), "First element should be a dict (dpop_claims)"
+        assert "htm" in dpop_claims, "dpop_claims should contain 'htm'"
+        assert "htu" in dpop_claims, "dpop_claims should contain 'htu'"
+        assert "iat" in dpop_claims, "dpop_claims should contain 'iat'"
+        assert dpop_claims["htm"] == "GET", "htm should match request method"
+
+        # Verify second element is the client jwk
+        assert client_jwk is not None, "client_jwk should not be None"
+        # client_jwk can be an ECKey or RSAKey, check for key attributes
+        assert hasattr(client_jwk, "as_dict"), "client_jwk should have as_dict method"
+        jwk_dict = client_jwk.as_dict(private=False)
+        assert "kty" in jwk_dict, "client_jwk should have 'kty' attribute"
+        assert jwk_dict["kty"] == "EC", "client_jwk should be EC type"
+
+
+class TestNoneDpopHeaderValidation:
+    """Tests for None or empty dpop_header validation."""
+
+    @pytest.mark.parametrize(
+        "invalid_header",
+        [
+            pytest.param(None, id="none_header"),
+            pytest.param("", id="empty_string_header"),
+        ],
+    )
+    def test_invalid_dpop_header_raises_value_error(self, invalid_header):
+        """
+        Test that validate_dpop_proof raises ValueError when dpop_header is None or empty string.
+        """
+        with pytest.raises(ValueError) as exc_info:
+            authutils.dpop.validate_dpop_proof(
+                invalid_header, "GET", "https://example.com/resource"
+            )
+        assert "Invalid DPoP proof: Empty string / None provided" in str(exc_info.value)
 
 
 class TestBidirectionalBinding:
