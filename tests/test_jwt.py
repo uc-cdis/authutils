@@ -138,6 +138,205 @@ def test_invalid_iss_rejected(
         )
 
 
+def test_denylist_callback_rejects_token(
+    claims, encoded_jwt, rsa_public_key, default_audience, default_scopes, iss
+):
+    """
+    Test that `validate_jwt` rejects tokens when denylist_callback returns True.
+    """
+
+    def denylist_callback(jti):
+        # Deny all tokens for this test
+        return True
+
+    with pytest.raises(JWTError) as exc_info:
+        validate_jwt(
+            encoded_jwt,
+            rsa_public_key,
+            default_audience,
+            default_scopes,
+            [iss],
+            denylist_callback=denylist_callback,
+        )
+
+
+def test_denylist_callback_allows_token(
+    claims, encoded_jwt, rsa_public_key, default_audience, default_scopes, iss
+):
+    """
+    Test that `validate_jwt` accepts tokens when denylist_callback returns False.
+    """
+
+    def allowlist_callback(jti):
+        # Allow all tokens for this test
+        return False
+
+    decoded_token = validate_jwt(
+        encoded_jwt,
+        rsa_public_key,
+        default_audience,
+        default_scopes,
+        [iss],
+        denylist_callback=allowlist_callback,
+    )
+    assert decoded_token
+    assert decoded_token == claims
+
+
+def test_denylist_callback_receives_jti(
+    claims,
+    token_headers,
+    rsa_private_key,
+    rsa_public_key,
+    default_audience,
+    default_scopes,
+    iss,
+):
+    """
+    Test that denylist_callback receives the correct jti value.
+    """
+    received_jti = None
+
+    def callback(jti):
+        nonlocal received_jti
+        received_jti = jti
+        return False
+
+    claims_with_jti = claims.copy()
+    claims_with_jti["jti"] = "test-jti-123"
+
+    encoded_token = jwt.encode(
+        claims_with_jti,
+        headers=token_headers,
+        key=rsa_private_key,
+        algorithm="RS256",
+    )
+    # Verify that callback is called with values from the token
+    decoded = validate_jwt(
+        encoded_token,
+        rsa_public_key,
+        default_audience,
+        default_scopes,
+        [iss],
+        denylist_callback=callback,
+    )
+    # Check that callback was called with values from the token
+    assert received_jti == claims_with_jti["jti"]
+
+
+def test_denylist_callback_not_callable_raises_value_error(
+    encoded_jwt, rsa_public_key, default_audience, default_scopes, iss
+):
+    """
+    Test that `validate_jwt` raises ValueError if denylist_callback is not callable.
+    """
+    with pytest.raises(ValueError):
+        validate_jwt(
+            encoded_jwt,
+            rsa_public_key,
+            default_audience,
+            default_scopes,
+            [iss],
+            denylist_callback="not_callable",
+        )
+
+
+def test_validate_jwt_with_purpose(
+    claims, encoded_jwt, rsa_public_key, default_audience, default_scopes, iss
+):
+    """
+    Test that `validate_jwt` validates purpose when provided.
+    """
+    # Token should have correct purpose
+    decoded_token = validate_jwt(
+        encoded_jwt,
+        rsa_public_key,
+        default_audience,
+        default_scopes,
+        [iss],
+        purpose="access",
+    )
+    assert decoded_token == claims
+
+
+def test_validate_jwt_with_incorrect_purpose(
+    claims, encoded_jwt, rsa_public_key, default_audience, default_scopes, iss
+):
+    """
+    Test that `validate_jwt` rejects tokens with incorrect purpose.
+    """
+    with pytest.raises(JWTError):
+        validate_jwt(
+            encoded_jwt,
+            rsa_public_key,
+            default_audience,
+            default_scopes,
+            [iss],
+            purpose="refresh",
+        )
+
+
+def test_validate_jwt_without_purpose(
+    claims, encoded_jwt, rsa_public_key, default_audience, default_scopes, iss
+):
+    """
+    Test that `validate_jwt` works without purpose parameter (None skips validation).
+    """
+    decoded_token = validate_jwt(
+        encoded_jwt,
+        rsa_public_key,
+        default_audience,
+        default_scopes,
+        [iss],
+        purpose=None,
+    )
+    assert decoded_token == claims
+
+
+def test_validate_jwt_with_scope_as_list(
+    claims, encoded_jwt, rsa_public_key, default_audience, iss
+):
+    """
+    Test that `validate_jwt` accepts scope as list and converts to set internally.
+    """
+    decoded_token = validate_jwt(
+        encoded_jwt,
+        rsa_public_key,
+        default_audience,
+        # scope as list - using scopes from the token
+        ["user", "openid"],
+        [iss],
+    )
+    assert decoded_token == claims
+
+
+def test_validate_jwt_with_options(
+    claims, encoded_jwt, rsa_public_key, default_audience, default_scopes, iss
+):
+    """
+    Test that `validate_jwt` passes options through to PyJWT.
+    """
+    decoded_token = validate_jwt(
+        encoded_jwt,
+        rsa_public_key,
+        "bad_aud",
+        default_scopes,
+        [iss],
+        options={"verify_aud": False},
+    )
+    assert decoded_token == claims
+
+
+def test_validate_jwt_type_validation():
+    """
+    Test that `validate_jwt` validates argument types.
+    """
+    with pytest.raises(ValueError):
+        validate_jwt(
+            "token", "key", aud=123, scope=None, allowed_issuers=[]
+        )  # aud must be str/list/None
+
+
 def test_get_public_key(app, example_keys_response, mock_get):
     """
     Test the functionality of retrieving the public keys from the keys

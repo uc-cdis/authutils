@@ -1,5 +1,8 @@
 import httpx
 import jwt
+from collections.abc import Callable
+
+from jwt.types import Options
 
 from ..errors import (
     JWTAudienceError,
@@ -61,18 +64,24 @@ def validate_purpose(claims, pur):
             the expected value
     """
     if "pur" not in claims:
-        raise JWTPurposeError("claims missing `pur` claim")
+        raise JWTPurposeError("claims missing ``pur`` claim")
     if claims["pur"] != pur:
         raise JWTPurposeError(
-            "claims have incorrect purpose: expected {}, got {}".format(
-                pur, claims["pur"]
-            )
+            f"claims have incorrect purpose: expected {pur}, got {claims['pur']}"
         )
 
 
 def validate_jwt(
-    encoded_token, public_key, aud, scope, issuers, options={}, logger=None
-):
+    encoded_token: str,
+    public_key: str,
+    aud: str | list[str] | None = None,
+    scope: set[str] | list[str] | None = None,
+    allowed_issuers: set[str] | list[str] | None = None,
+    purpose: str | None = None,
+    options: dict | None = None,
+    denylist_callback: Callable | None = None,
+    logger: Callable | None = None,
+) -> dict:
     """
     Validate the encoded JWT ``encoded_token``, which must satisfy the
     scopes ``scope``.
@@ -86,25 +95,33 @@ def validate_jwt(
       ``aud`` arg is passed, or if the ``aud`` arg does not match one of
       the items in the token aud field, because the audience is not validated
       anymore
-    - Check issuers: token iss field must match one of the items in the
-      ``issuers`` arg
+    - Check allowed_issuers: token iss field must match one of the items in the
+      ``allowed_issuers`` arg
     - Check scopes: token scopes must be a superset of required scopes
       (the ``scope`` argument); fail if not satisfied
+    - Validate purpose: optional check of the ``pur`` claim
+    - Denylist validation: optional callback to check if token is denylisted
 
     Args:
         encoded_token (str): encoded JWT
         public_key (str): public key to validate the JWT signature
-        aud (Optional[str|list]):
+        aud (str | list[str] | None):
           if provided, JWT validation will require that the token's ``aud`` value
           contains the arg value; if not provided, validation will require that
           the token not have an aud field.
-        scope (Optional[Iterable[str]]):
+        scope (set[str] | list[str] | None):
           set of scopes, each of which the JWT must satisfy in its
           ``scope`` claim. Optional.
-        issuers (list or set): allowed issuers whitelist
-        options (Optional[dict]): options to pass through to pyjwt's decode
+        allowed_issuers (set[str] | list[str] | None): allowed allowed_issuers whitelist. If None, this will
+            SKIP ISSUER VALIDATION. NOTE: THIS IS THE DEFAULT.
+        options (dict | None): options to pass through to pyjwt's decode
+        purpose (str | None): expected purpose of the token (e.g., 'access', 'refresh')
+            IF PURPOSE IS NONE (DEFAULT) THIS SKIPS VALIDATION.
+        denylist_callback (Callable | None): a callback function that takes
+          (jti: str) and returns True if the token is denylisted.
+          The callback is called after basic JWT validation.
 
-    Return:
+    Returns:
         dict: the decoded and validated JWT
 
     Raises:
@@ -112,28 +129,31 @@ def validate_jwt(
         JWTExpiredError: if token is expired
         JWTAudienceError: if aud validation fails
         JWTScopeError: if scope validation fails
-        JWTError: if some other token validation step fails
+        JWTPurposeError: if purpose validation fails
+        JWTError: if some other token validation step fails, including if
+          the denylist_callback indicates the token is denylisted
     """
+    options = options or {}
+    allowed_issuers = allowed_issuers or []
 
-    # Typecheck arguments.
-    if not isinstance(aud, str) and not isinstance(aud, list) and not aud is None:
+    if not isinstance(aud, str) and not isinstance(aud, list) and aud is not None:
         raise ValueError(
-            "aud must be string, list or None. Instead received aud of type {}".format(
-                type(aud)
-            )
+            f"aud must be string, list or None. Instead received aud of type {type(aud)}"
         )
-    if not isinstance(scope, set) and not isinstance(scope, list) and not scope is None:
+    if not isinstance(scope, set) and not isinstance(scope, list) and scope is not None:
         raise ValueError(
-            "scope must be set or list or None. Instead received scope of type {}".format(
-                type(scope)
-            )
+            f"scope must be set or list or None. Instead received scope of type {type(scope)}"
         )
-    if not isinstance(issuers, set) and not isinstance(issuers, list):
+    if not isinstance(allowed_issuers, set) and not isinstance(allowed_issuers, list):
         raise ValueError(
-            "issuers must be set or list. Instead received issuers of type {}".format(
-                type(issuers)
-            )
+            f"allowed_issuers must be set or list. Instead received allowed_issuers of type {type(allowed_issuers)}"
         )
+    if purpose is not None and not isinstance(purpose, str):
+        raise ValueError(
+            f"purpose must be a string or None. Instead received purpose of type {type(purpose)}. Value: {purpose}"
+        )
+    if scope and isinstance(scope, list):
+        scope = set(scope)
 
     try:
         token = jwt.decode(
@@ -141,23 +161,27 @@ def validate_jwt(
             key=public_key,
             algorithms=["RS256"],
             audience=aud,
-            options=options,
+            options=Options(**options),
         )
     except jwt.InvalidAudienceError as e:
-        raise JWTAudienceError(e)
+        # aud may not be in scope, use original value
+        raise JWTAudienceError(
+            f"token audience validation failed: expected {aud}, got unknown"
+        )
     except jwt.ExpiredSignatureError as e:
-        raise JWTExpiredError(e)
+        raise JWTExpiredError("token has expired")
     except jwt.InvalidTokenError as e:
-        raise JWTError(e)
+        raise JWTError(f"token validation failed: {e}")
 
     # PyJWT validates iat, exp, and aud fields; everything else
     # must happen here.
 
     # iss
     # Check that the issuer of the token has the expected hostname.
-    if token["iss"] not in issuers:
-        msg = "invalid issuer {}; expected: {}".format(token["iss"], issuers)
-        raise JWTError(msg)
+    if allowed_issuers:
+        if token["iss"] not in allowed_issuers:
+            msg = f"invalid issuer {token['iss']}; expected one of: {allowed_issuers}"
+            raise JWTError(msg)
 
     # scope
     # Check that if scope arg was non-empty then the token includes each given scope in its scope claim
@@ -167,14 +191,26 @@ def validate_jwt(
             token_scopes = token_scopes.split()
         if not isinstance(token_scopes, list):
             raise JWTError(
-                "invalid format in scope claim: {}; expected string or list".format(
-                    token["scopes"]
-                )
+                f"invalid format in scope claim: {token.get('scopes')}; expected string or list"
             )
         missing_scopes = set(scope) - set(token_scopes)
         if missing_scopes:
             raise JWTScopeError(
-                "token is missing required scopes: " + str(missing_scopes)
+                f"token is missing required scopes: {', '.join(sorted(missing_scopes))}"
             )
+
+    # Validate the purpose claim if provided
+    if purpose:
+        validate_purpose(token, purpose)
+
+    # Denylist validation: call the Denylist callback if provided
+    if denylist_callback is not None:
+        if not callable(denylist_callback):
+            raise ValueError(
+                "denylist_callback must be a callable that takes (jti) argument"
+            )
+        jti = token.get("jti", "")
+        if denylist_callback(jti):
+            raise JWTError("token is denylisted")
 
     return token

@@ -24,7 +24,7 @@ import json
 import os
 import base64
 import time
-from typing import Dict, Any, Tuple
+from typing import Callable, Dict, Any, Tuple
 from urllib.parse import urlparse
 
 from joserfc import jwt, jwk, jws
@@ -132,6 +132,8 @@ def validate_dpop_request(
     purpose: str | None = None,
     aud: str | None = None,
     require_nonce: bool = False,
+    options: dict | None = None,
+    denylist_callback: Callable | None = None,
 ) -> Dict[str, Any]:
     """
     Validate both the DPoP proof AND the access token in one operation.
@@ -156,6 +158,10 @@ def validate_dpop_request(
         purpose (str | None): Optional required purpose (e.g., "access"). Must match token's pur claim.
         aud (str | None): Optional audience. Note: authutils no longer validates audience.
         require_nonce (bool): Whether to require and validate a DPoP nonce.
+        options (dict | None): options to pass through to pyjwt's decode
+        denylist_callback (Callable | None): a callback function that takes
+          (jti: str) and returns True if the token is denylisted.
+          The callback is called after basic JWT validation.
 
     Returns:
         Dict[str, Any]: The validated access token claims dict.
@@ -163,17 +169,6 @@ def validate_dpop_request(
     Raises:
         ValueError: If DPoP proof validation fails.
         JWTError: If access token validation fails (signature, expiration, issuer, scope, purpose).
-
-    Example:
-        >>> claims = validate_dpop_request(
-        ...     dpop_header="eyJ0eXAi...",
-        ...     access_token="eyJhbGc...",
-        ...     request_method="GET",
-        ...     request_url="https://api.example.com/ga4gh/tes/v1/jobs",
-        ...     issuers=["https://fence.example.com"],
-        ...     scope={"user", "data"},
-        ...     purpose="access",
-        ... )
     """
     validate_dpop_proof(
         dpop_header=dpop_header,
@@ -196,13 +191,11 @@ def validate_dpop_request(
         public_key=public_key,
         aud=aud,
         scope=scope,
-        issuers=issuers,
-        options={},
+        allowed_issuers=issuers,
+        purpose=purpose,
+        options=options,
+        denylist_callback=denylist_callback,
     )
-
-    # Step 3: Validate purpose if specified
-    if purpose:
-        token_core.validate_purpose(validated_claims, purpose)
 
     return validated_claims
 

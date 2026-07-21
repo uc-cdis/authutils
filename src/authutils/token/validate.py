@@ -121,10 +121,16 @@ def validate_jwt(
         )
 
     claims = core.validate_jwt(
-        encoded_token, public_key, aud, scope, issuers, options, logger=logger
+        encoded_token,
+        public_key,
+        aud=aud,
+        scope=scope,
+        allowed_issuers=issuers,
+        purpose=purpose,
+        options=options,
+        logger=logger,
     )
-    if purpose:
-        core.validate_purpose(claims, purpose)
+
     return claims
 
 
