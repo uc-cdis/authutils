@@ -62,6 +62,15 @@ DPOP_PROOF_CLOCK_SKEW_LEEWAY = 60
 MAX_JTI_LENGTH = 256
 
 
+class _LargeHeaderRegistry(jws.JWSRegistry):
+    """
+    Custom JWS registry with increased header size limit for DPoP proofs.
+    This is required to support RSA-s
+    """
+
+    max_header_length = 4096
+
+
 def generate_dpop_proof(
     key: jwk.Key,
     method: str,
@@ -127,14 +136,14 @@ def validate_dpop_request(
     request_method: str,
     request_url: str,
     issuers: list[str],
-    public_key: str | None = None,
+    public_key: str | bytes | None = None,
     scope: set[str] | list[str] | None = None,
     purpose: str | None = None,
     aud: str | None = None,
     require_nonce: bool = False,
     options: dict | None = None,
     denylist_callback: Callable | None = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, Any], jwk.Key]:
     """
     Validate both the DPoP proof AND the access token in one operation.
 
@@ -152,7 +161,7 @@ def validate_dpop_request(
         request_method (str): The HTTP method of the incoming request.
         request_url (str): The full URL of the incoming request (scheme + host + path).
         issuers (list[str]): Allowed token issuers whitelist.
-        public_key (str | None): Optional public key for token validation. If None, will be
+        public_key (str | bytes | None): Optional public key for token validation. If None, will be
             fetched from the token issuer's JWKS endpoint.
         scope (set[str] | list[str] | None): Optional required scopes that the token must satisfy.
         purpose (str | None): Optional required purpose (e.g., "access"). Must match token's pur claim.
@@ -164,13 +173,16 @@ def validate_dpop_request(
           The callback is called after basic JWT validation.
 
     Returns:
-        Dict[str, Any]: The validated access token claims dict.
+        Dict[str, Any], Dict[str, Any], jwk.Key:
+            dict with decoded and validated claims dict from dpop,
+            dict with decoded and validated claims dict from access token,
+            validated client_jwk from dpop header
 
     Raises:
         ValueError: If DPoP proof validation fails.
         JWTError: If access token validation fails (signature, expiration, issuer, scope, purpose).
     """
-    validate_dpop_proof(
+    dpop_claims, client_jwk = validate_dpop_proof(
         dpop_header=dpop_header,
         request_method=request_method,
         request_url=request_url,
@@ -178,7 +190,7 @@ def validate_dpop_request(
         require_nonce=require_nonce,
     )
 
-    if public_key is None:
+    if not public_key:
         # Fetch public key from issuer's JWKS endpoint if not provided
         public_key = get_any_public_key_for_token(access_token)
 
@@ -186,7 +198,7 @@ def validate_dpop_request(
     if isinstance(scope, list):
         scope = set(scope)
 
-    validated_claims = token_core.validate_jwt(
+    validated_access_token_claims = token_core.validate_jwt(
         encoded_token=access_token,
         public_key=public_key,
         aud=aud,
@@ -197,7 +209,7 @@ def validate_dpop_request(
         denylist_callback=denylist_callback,
     )
 
-    return validated_claims
+    return dpop_claims, validated_access_token_claims, client_jwk
 
 
 def validate_dpop_proof(
@@ -299,9 +311,13 @@ def extract_and_validate_jwk(dpop_header: str) -> jwk.Key:
     Raises:
         ValueError: If header is malformed, missing jwk, or uses symmetric key.
     """
+    # Use custom registry with increased header size limit for DPoP proofs
+    # containing full JWKs (especially RSA keys which have large public keys)
+    registry = _LargeHeaderRegistry()
+
     try:
         unverified_header: dict = jws.extract_compact(
-            dpop_header.encode("utf-8")
+            dpop_header.encode("utf-8"), registry=registry
         ).protected
     except Exception:
         raise ValueError("Invalid DPoP proof: malformed compact JWS structure")
@@ -351,7 +367,9 @@ def _verify_signature_and_claims(
     Raises:
         JoseError: If signature verification or time validation fails.
     """
-    dpop_claims = jwt.decode(dpop_header, client_jwk)
+    # Use custom registry with increased header size limit for DPoP proofs
+    registry = _LargeHeaderRegistry()
+    dpop_claims = jwt.decode(dpop_header, client_jwk, registry=registry)
 
     claims_dict = dpop_claims.claims
     current_time = int(time.time())

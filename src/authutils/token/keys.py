@@ -311,7 +311,9 @@ def get_public_key_for_token(
     )
 
 
-def get_any_public_key_for_token(encoded_token, cache_ttl: int = 300, logger=None):
+def get_any_public_key_for_token(
+    encoded_token, cache_ttl: int = 300, logger=None
+) -> bytes:
     """
     Get the public key for a token (generalized for any web framework, e.g. without
     requiring Flask context like the above function).
@@ -347,7 +349,7 @@ def get_any_public_key_for_token(encoded_token, cache_ttl: int = 300, logger=Non
 
     # Try to retrieve from cache
     cached_key = _get_public_key_from_cache(cache_key, logger)
-    if cached_key is not None:
+    if cached_key:
         return cached_key
 
     logger.debug(f"cache miss. attempting to get keys URL from iss: {iss}...")

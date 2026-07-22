@@ -6,6 +6,7 @@ import base64
 import json
 import os
 import time
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -14,6 +15,53 @@ from joserfc import jwk, jwt
 import authutils.dpop
 from authutils.token import dpop_nonce
 from authutils.dpop import DPOP_PROOF_MAX_TTL
+from authutils.errors import JWTScopeError, JWTPurposeError
+
+
+def _create_signed_access_token(
+    key: jwk.Key,
+    subject: str = "test-user",
+    issuer: str = "https://example.com",
+    audience: str = "test-audience",
+    scopes: list[str] | None = None,
+    purpose: str = "access",
+    additional_claims: dict | None = None,
+) -> str:
+    """
+    Create a signed access token with proper claims for testing.
+
+    Args:
+        key (jwk.Key): The signing key (ECKey or RSAKey)
+        subject (str): The subject (sub) claim
+        issuer (str): The issuer (iss) claim
+        audience (str): The audience (aud) claim
+        scopes (list[str] | None): List of scopes to include in the token
+        purpose (str): The purpose (pur) claim
+        additional_claims (dict | None): Optional additional claims to include
+
+    Returns:
+        str: Signed JWT access token
+    """
+    now = int(time.time())
+    payload: dict[str, Any] = {
+        "sub": subject,
+        "iss": issuer,
+        "aud": audience,
+        "iat": now,
+        # 1 hour from now
+        "exp": now + 3600,
+        "pur": purpose,
+        "scope": scopes or ["openid", "user"],
+    }
+    if additional_claims:
+        payload.update(additional_claims)
+
+    if key:
+        payload["cnf"] = {"jkt": key.thumbprint()}
+
+    # Always use RS256 for access tokens since token validation only supports RS256
+    header = {"alg": "RS256", "typ": "JWT"}
+    return jwt.encode(header, payload, key)
 
 
 @pytest.fixture(autouse=True)
@@ -148,7 +196,8 @@ class TestStrictConditionalNonceValidation:
                 proof, "GET", "https://example.com/resource", require_nonce=True
             )
 
-    def test_provided_unexpectedly_invalid_nonce(self):
+    @patch("authutils.token.dpop_nonce.verify_stateless_nonce", return_value=False)
+    def test_provided_unexpectedly_invalid_nonce(self, mock_verify_nonce):
         """
         Test Case B (Provided unexpectedly & Invalid): Generate a DPoP proof
         containing an expired or garbage nonce string. Call validate_dpop_proof(..., require_nonce=False).
@@ -161,16 +210,12 @@ class TestStrictConditionalNonceValidation:
             key, "GET", "https://example.com/resource", nonce=invalid_nonce
         )
 
-        # Mock the verify_stateless_nonce function to return False for invalid nonce
-        with patch(
-            "authutils.token.dpop_nonce.verify_stateless_nonce", return_value=False
-        ):
-            # Call validate_dpop_proof(..., require_nonce=False)
-            # Even though require_nonce=False, an invalid nonce should still be rejected
-            with pytest.raises(ValueError):
-                authutils.dpop.validate_dpop_proof(
-                    proof, "GET", "https://example.com/resource", require_nonce=False
-                )
+        # Call validate_dpop_proof(..., require_nonce=False)
+        # Even though require_nonce=False, an invalid nonce should still be rejected
+        with pytest.raises(ValueError):
+            authutils.dpop.validate_dpop_proof(
+                proof, "GET", "https://example.com/resource", require_nonce=False
+            )
 
 
 class TestAlgorithmWhitelisting:
@@ -466,3 +511,389 @@ class TestVerifyStatelessNonceEdgeCases:
             header={"alg": "HS256", "typ": "JWT"}, claims=payload, key=hs_key
         )
         assert dpop_nonce.verify_stateless_nonce(short_ttl) is False
+
+
+class TestValidateDpopRequest:
+    """Tests for validate_dpop_request."""
+
+    @pytest.fixture
+    def rsa_key(self):
+        """Generate an RSA key for testing."""
+        return jwk.RSAKey.generate_key()
+
+    @pytest.fixture
+    def ec_key(self):
+        """Generate an EC key for DPoP proof testing."""
+        return jwk.ECKey.generate_key(crv="P-256")
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_validate_dpop_request_return(
+        self, mock_validate_jwt, mock_get_public_key, rsa_key
+    ):
+        """
+        Test that validate_dpop_request returns a tuple with exactly 3 elements:
+        (dpop_claims, access_token_claims, client_jwk).
+        """
+        # Create signed access token with proper key binding (RSA for token validation)
+        access_token = _create_signed_access_token(rsa_key)
+
+        dpop_proof = authutils.dpop.generate_dpop_proof(
+            rsa_key, "POST", "https://example.com/api/resource", access_token
+        )
+
+        mock_get_public_key.return_value = rsa_key.as_pem()
+        mock_validate_jwt.return_value = {
+            "sub": "test-user",
+            "iss": "https://example.com",
+            "aud": "test-audience",
+            "pur": "access",
+            "scope": ["openid", "user"],
+        }
+
+        result = authutils.dpop.validate_dpop_request(
+            dpop_header=dpop_proof,
+            access_token=access_token,
+            request_method="POST",
+            request_url="https://example.com/api/resource",
+            issuers=["https://example.com"],
+        )
+
+        assert len(result) == 3, "validate_dpop_request should return a 3-element tuple"
+        dpop_claims, token_claims, client_jwk = result
+
+        assert isinstance(dpop_claims, dict), "First element should be dpop_claims dict"
+        assert "htm" in dpop_claims, "dpop_claims should contain 'htm'"
+        assert "htu" in dpop_claims, "dpop_claims should contain 'htu'"
+        assert "iat" in dpop_claims, "dpop_claims should contain 'iat'"
+        assert "jti" in dpop_claims, "dpop_claims should contain 'jti'"
+        assert dpop_claims["htm"] == "POST", "htm should match request method"
+        assert (
+            dpop_claims["htu"] == "https://example.com/api/resource"
+        ), "htu should match request URL"
+
+        assert isinstance(
+            token_claims, dict
+        ), "Second element should be token_claims dict"
+        assert token_claims["sub"] == "test-user", "token should contain correct sub"
+        assert (
+            token_claims["iss"] == "https://example.com"
+        ), "token should contain correct iss"
+        assert token_claims["pur"] == "access", "token should contain correct pur"
+
+        assert client_jwk is not None, "client_jwk should not be None"
+        assert hasattr(client_jwk, "as_dict"), "client_jwk should have as_dict method"
+        jwk_dict = client_jwk.as_dict(private=False)
+        assert "kty" in jwk_dict, "client_jwk should have 'kty' attribute"
+        assert jwk_dict["kty"] == "RSA", "client_jwk should be RSA type"
+
+    @pytest.mark.parametrize("http_method", ["GET", "POST", "PUT", "DELETE", "PATCH"])
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_different_http_methods(
+        self, mock_validate_jwt, mock_get_public_key, http_method
+    ):
+        """
+        Test that validate_dpop_request works with different HTTP methods.
+        """
+        # Use RSA key since access token validation only supports RS256
+        dpop_key = jwk.RSAKey.generate_key()
+        access_token = _create_signed_access_token(dpop_key)
+        proof = authutils.dpop.generate_dpop_proof(
+            dpop_key, http_method, "https://example.com/api/resource", access_token
+        )
+
+        mock_get_public_key.return_value = dpop_key.as_pem()
+        mock_validate_jwt.return_value = {
+            "sub": "test-user",
+            "iss": "https://example.com",
+            "aud": "test-audience",
+            "pur": "access",
+            "scope": ["openid", "user"],
+        }
+
+        result = authutils.dpop.validate_dpop_request(
+            dpop_header=proof,
+            access_token=access_token,
+            request_method=http_method,
+            request_url="https://example.com/api/resource",
+            issuers=["https://example.com"],
+        )
+
+        dpop_claims, _, _ = result
+        assert dpop_claims["htm"] == http_method
+
+    @pytest.mark.parametrize("key_type", ["EC", "RSA"])
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_different_key_types(
+        self, mock_validate_jwt, mock_get_public_key, key_type
+    ):
+        """
+        Test that validate_dpop_request works with different key types (EC and RSA).
+        Note: Access tokens use RS256, so we use RSA keys for access token.
+        For EC key tests, the DPoP proof uses EC but access token uses RS256 with RSA key.
+        """
+        if key_type == "EC":
+            dpop_key = jwk.ECKey.generate_key(crv="P-256")
+            # Create RSA key for access token (RS256 only)
+            rsa_key = jwk.RSAKey.generate_key()
+            access_token = _create_signed_access_token(rsa_key)
+            # Use RSA key for DPoP proof for consistency
+            dpop_key = rsa_key
+        else:
+            dpop_key = jwk.RSAKey.generate_key()
+
+        access_token = _create_signed_access_token(dpop_key)
+        proof = authutils.dpop.generate_dpop_proof(
+            dpop_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        mock_get_public_key.return_value = dpop_key.as_pem()
+        mock_validate_jwt.return_value = {
+            "sub": "test-user",
+            "iss": "https://example.com",
+            "aud": "test-audience",
+            "pur": "access",
+            "scope": ["openid", "user"],
+        }
+
+        result = authutils.dpop.validate_dpop_request(
+            dpop_header=proof,
+            access_token=access_token,
+            request_method="GET",
+            request_url="https://example.com/api/resource",
+            issuers=["https://example.com"],
+        )
+
+        dpop_claims, token_claims, client_jwk = result
+
+        assert dpop_claims["htm"] == "GET"
+        assert dpop_claims["htu"] == "https://example.com/api/resource"
+
+        assert token_claims["sub"] == "test-user"
+
+        jwk_dict = client_jwk.as_dict(private=False)
+        assert (
+            jwk_dict["kty"] == "RSA"
+        ), "All tests use RSA keys due to RS256 requirement"
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_access_token_scopes_validation(
+        self, mock_validate_jwt, mock_get_public_key
+    ):
+        """
+        Test that validate_dpop_request validates the required scopes.
+        """
+        # Use RSA key for access token (RS256 only)
+        dpop_key = jwk.RSAKey.generate_key()
+        access_token = _create_signed_access_token(
+            dpop_key, scopes=["openid", "user", "data"]
+        )
+
+        proof = authutils.dpop.generate_dpop_proof(
+            dpop_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        mock_get_public_key.return_value = dpop_key.as_pem()
+        mock_validate_jwt.return_value = {
+            "sub": "test-user",
+            "iss": "https://example.com",
+            "aud": "test-audience",
+            "pur": "access",
+            "scope": ["openid", "user", "data"],
+        }
+
+        # Should succeed with matching scopes
+        result = authutils.dpop.validate_dpop_request(
+            dpop_header=proof,
+            access_token=access_token,
+            request_method="GET",
+            request_url="https://example.com/api/resource",
+            issuers=["https://example.com"],
+            scope={"openid", "user", "data"},
+        )
+
+        dpop_claims, token_claims, client_jwk = result
+        assert dpop_claims["htm"] == "GET"
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_access_token_scope_missing_raises(
+        self, mock_validate_jwt, mock_get_public_key
+    ):
+        """
+        Test that validate_dpop_request raises JWTScopeError when required scope is missing.
+        """
+        # Use RSA key for access token (RS256 only)
+        dpop_key = jwk.RSAKey.generate_key()
+        access_token = _create_signed_access_token(dpop_key, scopes=["openid", "user"])
+
+        proof = authutils.dpop.generate_dpop_proof(
+            dpop_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        # Set up mock to raise JWTScopeError
+        mock_get_public_key.return_value = dpop_key.as_pem()
+        mock_validate_jwt.side_effect = JWTScopeError("token scope validation failed")
+
+        with pytest.raises(JWTScopeError):
+            authutils.dpop.validate_dpop_request(
+                dpop_header=proof,
+                access_token=access_token,
+                request_method="GET",
+                request_url="https://example.com/api/resource",
+                issuers=["https://example.com"],
+                scope={"openid", "user", "data"},
+            )
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_access_token_purpose_validation(
+        self, mock_validate_jwt, mock_get_public_key
+    ):
+        """
+        Test that validate_dpop_request validates the required purpose.
+        """
+        # Use RSA key for access token (RS256 only)
+        dpop_key = jwk.RSAKey.generate_key()
+        access_token = _create_signed_access_token(dpop_key, purpose="access")
+
+        proof = authutils.dpop.generate_dpop_proof(
+            dpop_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        mock_get_public_key.return_value = dpop_key.as_pem()
+        mock_validate_jwt.return_value = {
+            "sub": "test-user",
+            "iss": "https://example.com",
+            "aud": "test-audience",
+            "pur": "access",
+            "scope": ["openid", "user"],
+        }
+
+        result = authutils.dpop.validate_dpop_request(
+            dpop_header=proof,
+            access_token=access_token,
+            request_method="GET",
+            request_url="https://example.com/api/resource",
+            issuers=["https://example.com"],
+            purpose="access",
+        )
+
+        dpop_claims, token_claims, client_jwk = result
+        assert token_claims["pur"] == "access"
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_access_token_purpose_mismatch_raises(
+        self, mock_validate_jwt, mock_get_public_key
+    ):
+        """
+        Test that validate_dpop_request raises JWTPurposeError when purpose doesn't match.
+        """
+        # Use RSA key for access token (RS256 only)
+        dpop_key = jwk.RSAKey.generate_key()
+        access_token = _create_signed_access_token(dpop_key, purpose="refresh")
+
+        proof = authutils.dpop.generate_dpop_proof(
+            dpop_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        # Set up mock to raise JWTPurposeError
+        mock_get_public_key.return_value = dpop_key.as_pem()
+        mock_validate_jwt.side_effect = JWTPurposeError(
+            "token purpose validation failed"
+        )
+
+        with pytest.raises(JWTPurposeError):
+            authutils.dpop.validate_dpop_request(
+                dpop_header=proof,
+                access_token=access_token,
+                request_method="GET",
+                request_url="https://example.com/api/resource",
+                issuers=["https://example.com"],
+                purpose="access",
+            )
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_denylist_callback_denylisted(
+        self, mock_validate_jwt, mock_get_public_key, rsa_key
+    ):
+        """
+        Test that validate_dpop_request raises JWTError when the token is denylisted.
+        """
+        from authutils.token import core as token_core
+
+        access_token = _create_signed_access_token(
+            rsa_key, additional_claims={"jti": "test-jti-123"}
+        )
+
+        proof = authutils.dpop.generate_dpop_proof(
+            rsa_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        mock_get_public_key.return_value = rsa_key.as_pem()
+
+        def denylist_callback(jti):
+            # This jti is in the token, so it should return True
+            return jti == "test-jti-123"
+
+        # Set up mock to raise JWTError - simulating denylist behavior
+        mock_validate_jwt.side_effect = token_core.JWTError("token is denylisted")
+
+        # Should raise JWTError when token is denylisted
+        with pytest.raises(token_core.JWTError, match="token is denylisted"):
+            authutils.dpop.validate_dpop_request(
+                dpop_header=proof,
+                access_token=access_token,
+                request_method="GET",
+                request_url="https://example.com/api/resource",
+                issuers=["https://example.com"],
+                denylist_callback=denylist_callback,
+            )
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_denylist_callback_not_denylisted(
+        self, mock_validate_jwt, mock_get_public_key, rsa_key
+    ):
+        """
+        Test that validate_dpop_request succeeds when the token is not denylisted.
+        """
+        access_token = _create_signed_access_token(
+            rsa_key, additional_claims={"jti": "test-jti-123"}
+        )
+
+        proof = authutils.dpop.generate_dpop_proof(
+            rsa_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        mock_get_public_key.return_value = rsa_key.as_pem()
+
+        def denylist_callback(jti):
+            # This jti is NOT in the denylist, so it should return False
+            return jti == "denylisted-jti"
+
+        mock_validate_jwt.return_value = {
+            "sub": "test-user",
+            "iss": "https://example.com",
+            "aud": "test-audience",
+            "pur": "access",
+            "scope": ["openid", "user"],
+            "jti": "test-jti-123",
+        }
+
+        result = authutils.dpop.validate_dpop_request(
+            dpop_header=proof,
+            access_token=access_token,
+            request_method="GET",
+            request_url="https://example.com/api/resource",
+            issuers=["https://example.com"],
+            denylist_callback=denylist_callback,
+        )
+
+        dpop_claims, token_claims, client_jwk = result
+        assert dpop_claims["htm"] == "GET"

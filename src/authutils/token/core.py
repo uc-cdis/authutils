@@ -73,7 +73,7 @@ def validate_purpose(claims, pur):
 
 def validate_jwt(
     encoded_token: str,
-    public_key: str,
+    public_key: str | bytes,
     aud: str | list[str] | None = None,
     scope: set[str] | list[str] | None = None,
     allowed_issuers: set[str] | list[str] | None = None,
@@ -104,7 +104,7 @@ def validate_jwt(
 
     Args:
         encoded_token (str): encoded JWT
-        public_key (str): public key to validate the JWT signature
+        public_key (str | bytes): public key to validate the JWT signature
         aud (str | list[str] | None):
           if provided, JWT validation will require that the token's ``aud`` value
           contains the arg value; if not provided, validation will require that
