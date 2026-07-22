@@ -143,6 +143,7 @@ def validate_dpop_request(
     require_nonce: bool = False,
     options: dict | None = None,
     denylist_callback: Callable | None = None,
+    secret: str | None = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], jwk.Key]:
     """
     Validate both the DPoP proof AND the access token in one operation.
@@ -171,6 +172,8 @@ def validate_dpop_request(
         denylist_callback (Callable | None): a callback function that takes
           (jti: str) and returns True if the token is denylisted.
           The callback is called after basic JWT validation.
+        secret (str | None): Optional secret key for stateless nonce verification.
+            If None, defaults to the environment-configured secret.
 
     Returns:
         Dict[str, Any], Dict[str, Any], jwk.Key:
@@ -188,6 +191,7 @@ def validate_dpop_request(
         request_url=request_url,
         unvalidated_access_token=access_token,
         require_nonce=require_nonce,
+        secret=secret,
     )
 
     if not public_key:
@@ -218,6 +222,7 @@ def validate_dpop_proof(
     request_url: str,
     unvalidated_access_token: str | None = None,
     require_nonce: bool = False,
+    secret: str | None = None,
 ) -> Tuple[Dict[str, Any], jwk.Key]:
     """
     Validate a DPoP proof JWT for a resource server request.
@@ -241,6 +246,8 @@ def validate_dpop_proof(
         request_url (str): The full URL of the incoming request (scheme + host + path).
         unvalidated_access_token (str | None): Optional access token to validate ath claim against.
         require_nonce (bool): Whether to require and validate a nonce.
+        secret (str | None): Optional secret key for stateless nonce verification.
+            If None, defaults to the environment-configured secret.
 
     Returns:
         Dict[str, Any], jwk.Key: dict with decoded claims dict, validated client_jwk from dpop header
@@ -265,7 +272,9 @@ def validate_dpop_proof(
     _validate_proof_claims(dpop_claims, request_method, request_url)
 
     if require_nonce or "nonce" in dpop_claims:
-        _validate_nonce_or_reject(dpop_claims, require_nonce=require_nonce)
+        _validate_nonce_or_reject(
+            dpop_claims, require_nonce=require_nonce, secret=secret
+        )
 
     if unvalidated_access_token:
         _validate_ath(dpop_claims, unvalidated_access_token)
@@ -431,15 +440,23 @@ def _validate_proof_claims(
         )
 
 
-def _validate_nonce_or_reject(dpop_claims: Dict[str, Any], require_nonce: bool) -> None:
+def _validate_nonce_or_reject(
+    dpop_claims: Dict[str, Any], require_nonce: bool, secret: str | None = None
+) -> None:
     """
-    Validate nonce; raise ValueError if missing or expired.
+    Validate DPoP nonce; raise ValueError if missing or expired.
 
     Args:
         dpop_claims (Dict[str, Any]): Decoded DPoP proof claims.
+        require_nonce (bool): Whether a nonce is required. If True and no nonce
+            is present, raises ValueError. If False and no nonce is present,
+            the function returns early without validation.
+        secret (str | None): Optional secret key for stateless nonce verification.
+            If None, defaults to the environment-configured secret.
 
     Raises:
-        ValueError: If nonce is missing or expired.
+        ValueError: If nonce is missing when required, or if the nonce is
+            invalid or expired according to verify_stateless_nonce.
     """
     client_nonce: str = dpop_claims.get("nonce", "")
 
@@ -450,7 +467,7 @@ def _validate_nonce_or_reject(dpop_claims: Dict[str, Any], require_nonce: bool) 
         # Nonce wasn't required and wasn't provided, safe to skip
         return
 
-    if not verify_stateless_nonce(client_nonce):
+    if not verify_stateless_nonce(client_nonce, secret=secret):
         raise ValueError("Invalid or expired DPoP nonce")
 
 

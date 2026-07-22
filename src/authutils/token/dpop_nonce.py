@@ -13,9 +13,9 @@ from joserfc.jwk import OctKey
 from joserfc.errors import JoseError
 
 
-def _get_shared_secret() -> Optional[str]:
+def _get_shared_secret(secret: str | None = None) -> Optional[str]:
     """Get DPOP_SHARED_SECRET from environment (read at runtime for testability)."""
-    return os.getenv("DPOP_SHARED_SECRET")
+    return secret or os.getenv("DPOP_SHARED_SECRET")
 
 
 def _get_nonce_ttl() -> int:
@@ -23,7 +23,7 @@ def _get_nonce_ttl() -> int:
     return int(os.getenv("DPOP_NONCE_TTL", "300"))
 
 
-def generate_stateless_nonce() -> str:
+def generate_stateless_nonce(secret: str | None = None) -> str:
     """
     Mint a symmetric nonce token valid for DPOP_NONCE_TTL_SECONDS.
 
@@ -33,7 +33,7 @@ def generate_stateless_nonce() -> str:
     Raises:
         RuntimeError: If DPOP_SHARED_SECRET environment variable not set.
     """
-    shared_secret = _get_shared_secret()
+    shared_secret = _get_shared_secret(secret=secret)
     if not shared_secret:
         raise RuntimeError("DPOP_SHARED_SECRET environment variable not set")
 
@@ -50,7 +50,7 @@ def generate_stateless_nonce() -> str:
     return jwt.encode(header, claims, key)
 
 
-def verify_stateless_nonce(client_nonce: str) -> bool:
+def verify_stateless_nonce(client_nonce: str, secret: str | None = None) -> bool:
     """
     Verify nonce originated from this cluster and hasn't expired.
 
@@ -63,7 +63,7 @@ def verify_stateless_nonce(client_nonce: str) -> bool:
     if not isinstance(client_nonce, str):
         return False
 
-    shared_secret = _get_shared_secret()
+    shared_secret = _get_shared_secret(secret=secret)
     if not client_nonce or not shared_secret:
         return False
 

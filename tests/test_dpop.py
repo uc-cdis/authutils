@@ -718,6 +718,149 @@ class TestValidateDpopRequest:
         dpop_claims, token_claims, client_jwk = result
         assert dpop_claims["htm"] == "GET"
 
+    def test_secret_parameter_fallback_to_env(self):
+        """
+        Test that when secret=None is passed, it defaults to the environment variable.
+        """
+        key = jwk.ECKey.generate_key(crv="P-256")
+        nonce = dpop_nonce.generate_stateless_nonce()
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", nonce=nonce
+        )
+
+        # Call with secret=None should use the DPOP_SHARED_SECRET from fixture
+        dpop_claims, client_jwk = authutils.dpop.validate_dpop_proof(
+            proof,
+            "GET",
+            "https://example.com/resource",
+            require_nonce=True,
+            secret=None,
+        )
+        assert dpop_claims.get("nonce") == nonce
+
+    def test_secret_parameter_explicit_value(self):
+        """
+        Test that when an explicit secret is passed, it uses that secret.
+        """
+        key = jwk.ECKey.generate_key(crv="P-256")
+        nonce = dpop_nonce.generate_stateless_nonce()
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", nonce=nonce
+        )
+
+        # Get the secret from the fixture to verify we can pass it explicitly
+        explicit_secret = os.environ["DPOP_SHARED_SECRET"]
+
+        # Call with explicit secret should work the same
+        dpop_claims, client_jwk = authutils.dpop.validate_dpop_proof(
+            proof,
+            "GET",
+            "https://example.com/resource",
+            require_nonce=True,
+            secret=explicit_secret,
+        )
+        assert dpop_claims.get("nonce") == nonce
+
+    def test_secret_parameter_passed_to_verify(self):
+        """
+        Test that the secret parameter is correctly passed to verify_stateless_nonce.
+        By generating a nonce with a known secret and then verifying with the same secret,
+        we confirm that the secret is being passed through correctly.
+        """
+        key = jwk.ECKey.generate_key(crv="P-256")
+        # Use a custom secret that we control
+        custom_secret = (
+            "custom-test-secret-32chars-minimum-test"  # pragma: allowlist secret
+        )
+
+        # Temporarily set the custom secret in environment
+        old_secret = os.environ.get("DPOP_SHARED_SECRET")
+        os.environ["DPOP_SHARED_SECRET"] = custom_secret
+        try:
+            # Generate nonce with custom secret
+            nonce = dpop_nonce.generate_stateless_nonce()
+            proof = authutils.dpop.generate_dpop_proof(
+                key, "GET", "https://example.com/resource", nonce=nonce
+            )
+        finally:
+            # Restore original secret
+            if old_secret:
+                os.environ["DPOP_SHARED_SECRET"] = old_secret
+            else:
+                os.environ.pop("DPOP_SHARED_SECRET", None)
+
+        # Now verify with explicit secret - should succeed if secret is passed correctly
+        dpop_claims, client_jwk = authutils.dpop.validate_dpop_proof(
+            proof,
+            "GET",
+            "https://example.com/resource",
+            require_nonce=True,
+            secret=custom_secret,
+        )
+        assert dpop_claims.get("nonce") == nonce
+
+    @patch("authutils.dpop.get_any_public_key_for_token")
+    @patch("authutils.dpop.token_core.validate_jwt")
+    def test_validate_dpop_request_secret_parameter(
+        self, mock_validate_jwt, mock_get_public_key
+    ):
+        """
+        Test that secret parameter is properly passed through from validate_dpop_request.
+        """
+        key = jwk.RSAKey.generate_key()
+        custom_secret = (
+            "custom-request-secret-32chars-minimum-test"  # pragma: allowlist secret
+        )
+
+        # Temporarily set the custom secret for nonce generation
+        old_secret = os.environ.get("DPOP_SHARED_SECRET")
+        os.environ["DPOP_SHARED_SECRET"] = custom_secret
+        try:
+            nonce = dpop_nonce.generate_stateless_nonce()
+
+            # Create access token with key binding
+            access_token = _create_signed_access_token(
+                key, additional_claims={"cnf": {"jkt": key.thumbprint()}}
+            )
+
+            proof = authutils.dpop.generate_dpop_proof(
+                key,
+                "POST",
+                "https://example.com/api/resource",
+                access_token,
+                nonce=nonce,
+            )
+
+            mock_get_public_key.return_value = key.as_pem()
+            mock_validate_jwt.return_value = {
+                "sub": "test-user",
+                "iss": "https://example.com",
+                "aud": "test-audience",
+                "pur": "access",
+                "scope": ["openid", "user"],
+            }
+
+            (
+                dpop_claims,
+                token_claims,
+                client_jwk,
+            ) = authutils.dpop.validate_dpop_request(
+                dpop_header=proof,
+                access_token=access_token,
+                request_method="POST",
+                request_url="https://example.com/api/resource",
+                issuers=["https://example.com"],
+                require_nonce=True,
+                secret=custom_secret,
+            )
+            assert dpop_claims["nonce"] == nonce
+        finally:
+            # Restore original secret
+            if old_secret:
+                os.environ["DPOP_SHARED_SECRET"] = old_secret
+            else:
+                os.environ.pop("DPOP_SHARED_SECRET", None)
+
     @patch("authutils.dpop.get_any_public_key_for_token")
     @patch("authutils.dpop.token_core.validate_jwt")
     def test_access_token_scope_missing_raises(
