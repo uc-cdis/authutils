@@ -122,7 +122,7 @@ def generate_dpop_proof(
     }
 
     if access_token:
-        payload["ath"] = _compute_ath(access_token)
+        payload["ath"] = compute_ath(access_token)
 
     if nonce:
         payload["nonce"] = nonce
@@ -482,12 +482,12 @@ def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:
     Raises:
         ValueError: If ath does not match SHA-256 of the token.
     """
-    expected_ath: str = _compute_ath(access_token)
+    expected_ath: str = compute_ath(access_token)
     if dpop_claims.get("ath") != expected_ath:
         raise ValueError("ath claim does not match access token hash")
 
 
-def _compute_ath(access_token: str | bytes) -> str:
+def compute_ath(access_token: str | bytes) -> str:
     """
     Compute base64url(SHA-256(token)) per RFC 9449 4.2.
 

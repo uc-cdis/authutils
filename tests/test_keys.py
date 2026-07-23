@@ -314,6 +314,7 @@ class TestGetAnyPublicKeyForToken:
     @patch("authutils.token.keys.httpx.get")
     def test_different_kids_different_cache_entries(self, mock_get, mock_jwks_response):
         """Test that tokens with different kids are cached separately."""
+
         # Create a mock that returns JWKS with matching kids
         def mock_get_response(url):
             response = Mock()
