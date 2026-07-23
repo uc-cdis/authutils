@@ -16,7 +16,7 @@ xmltodict = "~=0.9"
 
 authlib = ">=1.6.6"
 httpx = ">=0.23.0,<1.0.0"
-pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
+pyjwt = {version = ">=2.11.0,<3.0", extras = ["crypto"]}
 cryptography = ">=48.0.1"
 
 Flask = {version = "*", optional = true}
