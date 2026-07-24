@@ -30,9 +30,10 @@ from urllib.parse import urlparse
 from joserfc import jwt, jwk, jws
 from joserfc.errors import JoseError
 
-from authutils.token.dpop_nonce import verify_stateless_nonce
+from authutils.token.dpop_nonce import verify_stateless_nonce, generate_stateless_nonce
 from authutils.token import core as token_core
 from authutils.token.keys import get_any_public_key_for_token
+from authutils.errors import InvalidNonceError
 
 DPOP_JWT_TYPE = "dpop+jwt"
 DEFAULT_DPOP_ALGORITHM = "ES256"
@@ -254,6 +255,9 @@ def validate_dpop_proof(
 
     Raises:
         ValueError: If any validation fails.
+        InvalidNonceError: If nonce is missing or invalid. This will contain the error,
+            description, and a valid nonce for the caller to send back to client as
+            header (per spec). Caller must extract the information from this exception.
 
     Example:
         >>> claims = validate_dpop_proof(
@@ -272,9 +276,7 @@ def validate_dpop_proof(
     _validate_proof_claims(dpop_claims, request_method, request_url)
 
     if require_nonce or "nonce" in dpop_claims:
-        _validate_nonce_or_reject(
-            dpop_claims, require_nonce=require_nonce, secret=secret
-        )
+        _validate_nonce(dpop_claims, require_nonce=require_nonce, secret=secret)
 
     if unvalidated_access_token:
         _validate_ath(dpop_claims, unvalidated_access_token)
@@ -440,35 +442,37 @@ def _validate_proof_claims(
         )
 
 
-def _validate_nonce_or_reject(
+def _validate_nonce(
     dpop_claims: Dict[str, Any], require_nonce: bool, secret: str | None = None
 ) -> None:
     """
-    Validate DPoP nonce; raise ValueError if missing or expired.
+    Validate DPoP nonce; raise InvalidNonceError if missing or expired.
+    InvalidNonceError will CONTAIN the new nonce and error response information
+    required per the spec.
 
     Args:
         dpop_claims (Dict[str, Any]): Decoded DPoP proof claims.
         require_nonce (bool): Whether a nonce is required. If True and no nonce
-            is present, raises ValueError. If False and no nonce is present,
+            is present, raises InvalidNonceError. If False and no nonce is present,
             the function returns early without validation.
         secret (str | None): Optional secret key for stateless nonce verification.
             If None, defaults to the environment-configured secret.
 
     Raises:
-        ValueError: If nonce is missing when required, or if the nonce is
+        InvalidNonceError: If nonce is missing when required, or if the nonce is
             invalid or expired according to verify_stateless_nonce.
     """
     client_nonce: str = dpop_claims.get("nonce", "")
 
     if not client_nonce:
         if require_nonce:
-            raise ValueError("DPoP proof missing required server nonce")
+            raise InvalidNonceError(new_nonce=generate_stateless_nonce(secret=secret))
 
         # Nonce wasn't required and wasn't provided, safe to skip
         return
 
     if not verify_stateless_nonce(client_nonce, secret=secret):
-        raise ValueError("Invalid or expired DPoP nonce")
+        raise InvalidNonceError(new_nonce=generate_stateless_nonce(secret=secret))
 
 
 def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:

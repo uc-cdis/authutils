@@ -15,7 +15,7 @@ from joserfc import jwk, jwt
 import authutils.dpop
 from authutils.token import dpop_nonce
 from authutils.dpop import DPOP_PROOF_MAX_TTL
-from authutils.errors import JWTScopeError, JWTPurposeError
+from authutils.errors import InvalidNonceError, JWTScopeError, JWTPurposeError
 
 
 def _create_signed_access_token(
@@ -177,12 +177,13 @@ class TestBidirectionalBinding:
 
 
 class TestStrictConditionalNonceValidation:
-    """Strict Conditional Nonce Validation"""
+    """Strict Conditional Nonce Validation per RFC 9449"""
 
     def test_missing_required_nonce(self):
         """
         Test Case A (Missing & Required): Generate a DPoP proof without a nonce.
         Call validate_dpop_proof(..., require_nonce=True).
+        Expects InvalidNonceError containing new nonce response headers.
         """
         # Generate a DPoP proof without a nonce
         key = jwk.ECKey.generate_key(crv="P-256")
@@ -190,17 +191,24 @@ class TestStrictConditionalNonceValidation:
             key, "GET", "https://example.com/resource"
         )
 
-        # Call validate_dpop_proof(..., require_nonce=True)
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidNonceError) as exc_info:
             authutils.dpop.validate_dpop_proof(
                 proof, "GET", "https://example.com/resource", require_nonce=True
             )
 
-    @patch("authutils.token.dpop_nonce.verify_stateless_nonce", return_value=False)
+        err = exc_info.value
+        assert err.code == 400
+        assert err.json["error"] == "use_dpop_nonce"
+        assert "DPoP-Nonce" in err.error_headers
+        assert isinstance(err.error_headers["DPoP-Nonce"], str)
+        assert len(err.error_headers["DPoP-Nonce"]) > 0
+
+    @patch("authutils.dpop.verify_stateless_nonce", return_value=False)
     def test_provided_unexpectedly_invalid_nonce(self, mock_verify_nonce):
         """
         Test Case B (Provided unexpectedly & Invalid): Generate a DPoP proof
         containing an expired or garbage nonce string. Call validate_dpop_proof(..., require_nonce=False).
+        Even though require_nonce=False, an invalid nonce should still raise InvalidNonceError.
         """
         # Generate a DPoP proof with invalid nonce
         key = jwk.ECKey.generate_key(crv="P-256")
@@ -210,11 +218,119 @@ class TestStrictConditionalNonceValidation:
             key, "GET", "https://example.com/resource", nonce=invalid_nonce
         )
 
-        # Call validate_dpop_proof(..., require_nonce=False)
-        # Even though require_nonce=False, an invalid nonce should still be rejected
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidNonceError) as exc_info:
             authutils.dpop.validate_dpop_proof(
                 proof, "GET", "https://example.com/resource", require_nonce=False
+            )
+
+        err = exc_info.value
+        assert err.code == 400
+        assert "DPoP-Nonce" in err.error_headers
+
+
+class TestNonceValidationAndInvalidNonceError:
+    """Tests for DPoP nonce validation and InvalidNonceError handling per RFC 9449."""
+
+    def test_missing_required_nonce_raises_invalid_nonce_error(self):
+        """
+        Test that validate_dpop_proof raises InvalidNonceError when require_nonce=True
+        and the DPoP proof lacks a nonce claim.
+        """
+        key = jwk.ECKey.generate_key(crv="P-256")
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource"
+        )
+
+        with pytest.raises(InvalidNonceError) as exc_info:
+            authutils.dpop.validate_dpop_proof(
+                proof, "GET", "https://example.com/resource", require_nonce=True
+            )
+
+        err = exc_info.value
+
+        assert err.code == 400
+        assert err.json == {
+            "error": "use_dpop_nonce",
+            "error_description": "Authorization server requires nonce in DPoP proof",
+        }
+
+        # Verify new nonce header was generated for client resubmission
+        assert "DPoP-Nonce" in err.error_headers
+        assert isinstance(err.error_headers["DPoP-Nonce"], str)
+        assert len(err.error_headers["DPoP-Nonce"]) > 0
+
+    @patch("authutils.token.dpop_nonce.verify_stateless_nonce", return_value=False)
+    def test_invalid_nonce_raises_invalid_nonce_error(self, mock_verify_nonce):
+        """
+        Test that validate_dpop_proof raises InvalidNonceError when an invalid/expired
+        nonce is provided, even if require_nonce=False.
+        """
+        key = jwk.ECKey.generate_key(crv="P-256")
+        invalid_nonce = "garbage-or-expired-nonce"
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", nonce=invalid_nonce
+        )
+
+        with pytest.raises(InvalidNonceError) as exc_info:
+            authutils.dpop.validate_dpop_proof(
+                proof, "GET", "https://example.com/resource", require_nonce=False
+            )
+
+        err = exc_info.value
+
+        assert err.code == 400
+        assert "DPoP-Nonce" in err.error_headers
+        assert isinstance(err.error_headers["DPoP-Nonce"], str)
+        assert len(err.error_headers["DPoP-Nonce"]) > 0
+
+    def test_valid_nonce_passes_validation(self):
+        """
+        Test that validate_dpop_proof succeeds without error when a valid stateless nonce
+        is provided and require_nonce=True.
+        """
+        valid_nonce = dpop_nonce.generate_stateless_nonce()
+        key = jwk.ECKey.generate_key(crv="P-256")
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", nonce=valid_nonce
+        )
+
+        dpop_claims, client_jwk = authutils.dpop.validate_dpop_proof(
+            proof, "GET", "https://example.com/resource", require_nonce=True
+        )
+
+        assert dpop_claims["nonce"] == valid_nonce
+        assert client_jwk is not None
+
+    def test_custom_secret_passed_to_nonce_validation(self):
+        """
+        Test that custom secrets passed to validate_dpop_proof correctly validate nonces.
+        """
+        custom_secret = "custom-test-secret-32-chars-long!"  # pragma: allowlist secret
+        valid_nonce = dpop_nonce.generate_stateless_nonce(secret=custom_secret)
+
+        key = jwk.ECKey.generate_key(crv="P-256")
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", nonce=valid_nonce
+        )
+
+        # Verification with matching secret should succeed
+        dpop_claims, _ = authutils.dpop.validate_dpop_proof(
+            proof,
+            "GET",
+            "https://example.com/resource",
+            require_nonce=True,
+            secret=custom_secret,
+        )
+        assert dpop_claims["nonce"] == valid_nonce
+
+        # Verification with mismatched secret should fail and raise InvalidNonceError
+        with pytest.raises(InvalidNonceError):
+            authutils.dpop.validate_dpop_proof(
+                proof,
+                "GET",
+                "https://example.com/resource",
+                require_nonce=True,
+                secret="wrong-secret-key-32-chars-long!!",  # pragma: allowlist secret
             )
 
 
