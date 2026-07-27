@@ -532,7 +532,8 @@ def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:
         ValueError: If ath does not match SHA-256 of the token.
     """
     expected_ath: str = compute_ath(access_token)
-    logging.debug(
+    # TODO: remove or make debug. FIXME: debug logs not showing up
+    logging.info(
         f"expected_ath: {expected_ath}. dpop_claims.auth: {dpop_claims.get('ath')}"
     )
     if dpop_claims.get("ath") != expected_ath:
