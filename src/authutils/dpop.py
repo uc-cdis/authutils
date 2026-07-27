@@ -126,6 +126,13 @@ def generate_dpop_proof(
     }
 
     if access_token:
+        if access_token.lower().startswith("bearer "):
+            raise ValueError(
+                "The provided access_token contains the 'Bearer ' prefix. "
+                "DPoP ath claims must be computed using only the raw JWT/access token."
+                "Ensure you are not accidentally providing an Authorization header's full contents "
+                "(which would contain the bearer prefix)."
+            )
         payload["ath"] = compute_ath(access_token)
 
     if nonce:
@@ -493,7 +500,7 @@ def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:
         ValueError: If ath does not match SHA-256 of the token.
     """
     expected_ath: str = compute_ath(access_token)
-    logging.info(
+    logging.debug(
         f"expected_ath: {expected_ath}. dpop_claims.auth: {dpop_claims.get('ath')}"
     )
     if dpop_claims.get("ath") != expected_ath:
