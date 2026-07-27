@@ -34,7 +34,10 @@ from joserfc.errors import JoseError
 from authutils.token.dpop_nonce import verify_stateless_nonce, generate_stateless_nonce
 from authutils.token import core as token_core
 from authutils.token.keys import get_any_public_key_for_token
-from authutils.errors import InvalidNonceError
+from authutils.errors import (
+    InvalidNonceErrorResourceServer,
+    InvalidNonceErrorAuthorizationServer,
+)
 
 DPOP_JWT_TYPE = "dpop+jwt"
 DEFAULT_DPOP_ALGORITHM = "ES256"
@@ -155,6 +158,7 @@ def validate_dpop_request(
     options: dict | None = None,
     denylist_callback: Callable | None = None,
     secret: str | None = None,
+    as_resource_server: bool = True,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], jwk.Key]:
     """
     Validate both the DPoP proof AND the access token in one operation.
@@ -185,6 +189,10 @@ def validate_dpop_request(
           The callback is called after basic JWT validation.
         secret (str | None): Optional secret key for stateless nonce verification.
             If None, defaults to the environment-configured secret.
+        TODO: add unit test(s) for as_resource_server
+        as_resource_server (bool): Default True. Whether caller is a Resource Server.
+            False implies caller is the Authorization Server. This alters some of the
+            error messaging behavior (per the spec).
 
     Returns:
         Dict[str, Any], Dict[str, Any], jwk.Key:
@@ -206,6 +214,7 @@ def validate_dpop_request(
         unvalidated_access_token=access_token,
         require_nonce=require_nonce,
         secret=secret,
+        as_resource_server=as_resource_server,
     )
 
     if not public_key:
@@ -237,6 +246,7 @@ def validate_dpop_proof(
     unvalidated_access_token: str | None = None,
     require_nonce: bool = False,
     secret: str | None = None,
+    as_resource_server: bool = True,
 ) -> Tuple[Dict[str, Any], jwk.Key]:
     """
     Validate a DPoP proof JWT for a resource server request.
@@ -289,7 +299,12 @@ def validate_dpop_proof(
     _validate_proof_claims(dpop_claims, request_method, request_url)
 
     if require_nonce or "nonce" in dpop_claims:
-        _validate_nonce(dpop_claims, require_nonce=require_nonce, secret=secret)
+        _validate_nonce(
+            dpop_claims,
+            require_nonce=require_nonce,
+            secret=secret,
+            as_resource_server=as_resource_server,
+        )
 
     if unvalidated_access_token:
         _validate_ath(dpop_claims, unvalidated_access_token)
@@ -456,7 +471,10 @@ def _validate_proof_claims(
 
 
 def _validate_nonce(
-    dpop_claims: Dict[str, Any], require_nonce: bool, secret: str | None = None
+    dpop_claims: Dict[str, Any],
+    require_nonce: bool,
+    secret: str | None = None,
+    as_resource_server: bool = True,
 ) -> None:
     """
     Validate DPoP nonce; raise InvalidNonceError if missing or expired.
@@ -479,13 +497,27 @@ def _validate_nonce(
 
     if not client_nonce:
         if require_nonce:
-            raise InvalidNonceError(new_nonce=generate_stateless_nonce(secret=secret))
+            if as_resource_server:
+                raise InvalidNonceErrorResourceServer(
+                    new_nonce=generate_stateless_nonce(secret=secret)
+                )
+            else:
+                raise InvalidNonceErrorAuthorizationServer(
+                    new_nonce=generate_stateless_nonce(secret=secret)
+                )
 
         # Nonce wasn't required and wasn't provided, safe to skip
         return
 
     if not verify_stateless_nonce(client_nonce, secret=secret):
-        raise InvalidNonceError(new_nonce=generate_stateless_nonce(secret=secret))
+        if as_resource_server:
+            raise InvalidNonceErrorResourceServer(
+                new_nonce=generate_stateless_nonce(secret=secret)
+            )
+        else:
+            raise InvalidNonceErrorAuthorizationServer(
+                new_nonce=generate_stateless_nonce(secret=secret)
+            )
 
 
 def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:
