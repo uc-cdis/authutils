@@ -27,6 +27,7 @@ import time
 from typing import Callable, Dict, Any, Tuple
 from urllib.parse import urlparse
 
+from cdislogging import get_logger
 from joserfc import jwt, jwk, jws
 from joserfc.errors import JoseError
 
@@ -61,6 +62,8 @@ DPOP_PROOF_CLOCK_SKEW_LEEWAY = 60
 # to avoid unnecessarilly large JTIs since we may
 # want to cache these in the future
 MAX_JTI_LENGTH = 256
+
+logging = get_logger(__name__)
 
 
 class _LargeHeaderRegistry(jws.JWSRegistry):
@@ -185,6 +188,9 @@ def validate_dpop_request(
     Raises:
         ValueError: If DPoP proof validation fails.
         JWTError: If access token validation fails (signature, expiration, issuer, scope, purpose).
+        InvalidNonceError: If nonce is missing or invalid. This will contain the error,
+            description, and a valid nonce for the caller to send back to client as
+            header (per spec). Caller must extract the information from this exception.
     """
     dpop_claims, client_jwk = validate_dpop_proof(
         dpop_header=dpop_header,
@@ -487,6 +493,9 @@ def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:
         ValueError: If ath does not match SHA-256 of the token.
     """
     expected_ath: str = compute_ath(access_token)
+    logging.info(
+        f"expected_ath: {expected_ath}. dpop_claims.auth: {dpop_claims.get('ath')}"
+    )
     if dpop_claims.get("ath") != expected_ath:
         raise ValueError("ath claim does not match access token hash")
 
