@@ -209,7 +209,7 @@ def validate_dpop_request(
     """
     # TODO unit tests for this
     # get rid of any prefixed 'DPoP ' / 'dpop '
-    dpop_header = "".join(dpop_header.split(" ")[1:])
+    dpop_header = dpop_header.split(" ", 1)[-1]
 
     dpop_claims, client_jwk = validate_dpop_proof(
         dpop_header=dpop_header,
@@ -297,7 +297,7 @@ def validate_dpop_proof(
         raise ValueError("Invalid DPoP proof: Empty string / None provided")
 
     # get rid of any prefixed 'DPoP ' / 'dpop '
-    dpop_header = "".join(dpop_header.split(" ")[1:])
+    dpop_header = dpop_header.split(" ", 1)[-1]
 
     client_jwk = extract_and_validate_jwk(dpop_header)
 
@@ -358,10 +358,7 @@ def extract_and_validate_jwk(dpop_header: str) -> jwk.Key:
         ValueError: If header is malformed, missing jwk, or uses symmetric key.
     """
     # get rid of any prefixed 'DPoP ' / 'dpop '
-    dpop_header = "".join(dpop_header.split(" ")[1:])
-
-    # TODO FIXME REMOVE
-    logging.info(f"Extracting and validating jwk from dpop header: '{dpop_header}'")
+    dpop_header = dpop_header.split(" ", 1)[-1]
 
     # Use custom registry with increased header size limit for DPoP proofs
     # containing full JWKs (especially RSA keys which have large public keys)
