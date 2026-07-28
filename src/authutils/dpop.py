@@ -360,6 +360,9 @@ def extract_and_validate_jwk(dpop_header: str) -> jwk.Key:
     # get rid of any prefixed 'DPoP ' / 'dpop '
     dpop_header = "".join(dpop_header.split(" ")[1:])
 
+    # TODO FIXME REMOVE
+    logging.info(f"Extracting and validating jwk from dpop header: '{dpop_header}'")
+
     # Use custom registry with increased header size limit for DPoP proofs
     # containing full JWKs (especially RSA keys which have large public keys)
     registry = _LargeHeaderRegistry()
@@ -368,7 +371,8 @@ def extract_and_validate_jwk(dpop_header: str) -> jwk.Key:
         unverified_header: dict = jws.extract_compact(
             dpop_header.encode("utf-8"), registry=registry
         ).protected
-    except Exception:
+    except Exception as exc:
+        logging.error(exc, exc_info=True, stack_info=True)
         raise ValueError("Invalid DPoP proof: malformed compact JWS structure")
 
     alg = unverified_header.get("alg")
