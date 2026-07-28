@@ -555,6 +555,9 @@ def compute_ath(access_token: str | bytes) -> str:
     Returns:
         str: Base64url-encoded SHA-256 hash.
     """
+    # TODO FIXME REMOVE
+    print(f"access_token from compute_ath in authutils: {access_token}")
+
     if isinstance(access_token, str):
         token_bytes = access_token.encode("ascii")
     elif isinstance(access_token, bytes):
