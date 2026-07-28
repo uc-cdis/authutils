@@ -360,12 +360,13 @@ def get_any_public_key_for_token(
     try:
         # Fetch JWKS from issuer
         logger.info(f"hitting keys URL from iss: {iss}, keys_url: {keys_url}...")
-        response = httpx.get(keys_url)
+        response = httpx.get(keys_url, timeout=10)
         response.raise_for_status()
         jwks_data = response.json()
         keys = jwks_data.get("keys", [])
-    except Exception as e:
-        raise JWTError(f"Could not fetch JWKS from {keys_url}: {str(e)}")
+    except Exception as exc:
+        logger.error(exc, stack_info=True, exc_info=True)
+        raise JWTError(f"Could not fetch JWKS from {keys_url}: {str(exc)}")
 
     if not keys:
         raise JWTError(f"Got no keys from {keys_url} for iss: {iss}")
