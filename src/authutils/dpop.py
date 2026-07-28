@@ -425,7 +425,7 @@ def compute_ath(access_token: str | bytes) -> str:
             f"access_token must be str or bytes, not {type(access_token).__name__}"
         )
 
-    logging.info(f"Computing ath for access token: {access_token[:50]}...TRUNCATED")
+    logging.debug(f"Computing ath for access token: {access_token[:50]}...TRUNCATED")
 
     digest = hashlib.sha256(token_bytes).digest()
     return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
