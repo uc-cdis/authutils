@@ -576,7 +576,8 @@ def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:
     if dpop_claims.get("ath") != expected_ath:
         raise ValueError(
             f"ath claim does not match access token hash. "
-            f"     expected_ath: {expected_ath}"
+            f"  access_token: {access_token[:50]}...TRUNCATED"
+            f"  expected_ath (computed from access_token): {expected_ath}"
             f"  dpop_claims.ath: {dpop_claims.get('ath')}"
         )
 
