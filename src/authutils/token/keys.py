@@ -139,7 +139,7 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
     Raises:
         ValueError: if user_api is not provided or set in app config
     """
-    logger = logger or get_logger(__name__, log_level="info")
+    logger = logger or get_logger(__name__)
     if pkey_cache is None:
         pkey_cache = {}
     # First, make sure the app has a ``jwt_public_keys`` attribute set up.
@@ -239,7 +239,7 @@ def get_public_key(kid, iss=None, attempt_refresh=True, pkey_cache=None, logger=
         or flask.current_app.config.get("OIDC_ISSUER")
         or flask.current_app.config["USER_API"]
     )
-    logger = logger or get_logger(__name__, log_level="info")
+    logger = logger or get_logger(__name__)
 
     if flask.has_app_context():
         need_refresh = not hasattr(flask.current_app, "jwt_public_keys") or (
@@ -290,7 +290,7 @@ def get_public_key_for_token(
     Return:
         str: public RSA key for token verification
     """
-    logger = logger or get_logger(__name__, log_level="info")
+    logger = logger or get_logger(__name__)
     kid = get_kid(encoded_token)
 
     force_issuer = (
@@ -334,7 +334,7 @@ def get_any_public_key_for_token(
     Raises:
         JWTError: If the token is malformed or the public key cannot be fetched.
     """
-    logger = logger or get_logger(__name__, log_level="info")
+    logger = logger or get_logger(__name__)
 
     try:
         iss = get_iss(encoded_token)
@@ -355,7 +355,7 @@ def get_any_public_key_for_token(
     logger.debug(f"cache miss. attempting to get keys URL from iss: {iss}...")
     keys_url = get_keys_url(iss)
 
-    # TODO: check keys URL against an allowlist of domains
+    # TODO: check keys URL against an allowlist of domains?
 
     try:
         # Fetch JWKS from issuer
@@ -363,17 +363,35 @@ def get_any_public_key_for_token(
         response = httpx.get(keys_url, timeout=10)
         response.raise_for_status()
         jwks_data = response.json()
-        keys = jwks_data.get("keys", [])
+
+        # Safely extract keys array (handles root dict or fallback list)
+        raw_keys = (
+            jwks_data.get("keys", []) if isinstance(jwks_data, dict) else jwks_data
+        )
+
+        # Map kid -> key object (either PEM string or JWK dict)
+        keys_by_id = {}
+
+        for item in raw_keys:
+            # Custom format: ["kid", "-----BEGIN PUBLIC KEY..."]
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                kid, key_content = item[0], item[1]
+                keys_by_id[kid] = key_content
+
+            # Official .well-known JWKS format: {"kid": "...", "kty": "RSA", ...}
+            elif isinstance(item, dict) and "kid" in item:
+                keys_by_id[item["kid"]] = item
+
     except Exception as exc:
         logger.error(exc, stack_info=True, exc_info=True)
         raise JWTError(f"Could not fetch JWKS from {keys_url}: {str(exc)}")
 
-    if not keys:
+    if not keys_by_id:
         raise JWTError(f"Got no keys from {keys_url} for iss: {iss}")
 
     # Find the key with matching kid or use the first key
-    for key_data in keys:
-        if key_data.get("kid") == kid or (kid is None and keys):
+    for kid, key_data in keys_by_id.items():
+        if key_data.get("kid") == kid or (kid is None and keys_by_id):
             _, pem_key = get_pem_key(key_data, logger)
 
             # Save to cache with TTL and size limiting

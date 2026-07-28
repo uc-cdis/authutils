@@ -12,6 +12,10 @@ from ..errors import (
     JWTError,
 )
 
+from cdislogging import get_logger
+
+logging = get_logger(__name__)
+
 
 def get_keys_url(issuer, force_issuer=None):
     """
@@ -25,9 +29,12 @@ def get_keys_url(issuer, force_issuer=None):
         [issuer.strip("/"), ".well-known", "openid-configuration"]
     )
     try:
-        jwks_uri = httpx.get(openid_cfg_path).json().get("jwks_uri", "")
+        jwks_uri = httpx.get(openid_cfg_path, timeout=10).json().get("jwks_uri", "")
         return jwks_uri
-    except Exception:
+    except Exception as exc:
+        logging.info(
+            f"Could not get public keys from: {openid_cfg_path}. Falling back to iss: {jwt_keys_url}. Exception: {exc}"
+        )
         return jwt_keys_url
 
 
