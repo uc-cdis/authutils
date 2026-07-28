@@ -207,6 +207,10 @@ def validate_dpop_request(
             description, and a valid nonce for the caller to send back to client as
             header (per spec). Caller must extract the information from this exception.
     """
+    # TODO unit tests for this
+    # get rid of any prefixed 'DPoP ' / 'dpop '
+    dpop_header = "".join(dpop_header.split(" ")[1:])
+
     dpop_claims, client_jwk = validate_dpop_proof(
         dpop_header=dpop_header,
         request_method=request_method,
@@ -292,6 +296,9 @@ def validate_dpop_proof(
     if not dpop_header:
         raise ValueError("Invalid DPoP proof: Empty string / None provided")
 
+    # get rid of any prefixed 'DPoP ' / 'dpop '
+    dpop_header = "".join(dpop_header.split(" ")[1:])
+
     client_jwk = extract_and_validate_jwk(dpop_header)
 
     dpop_claims = _verify_signature_and_claims(dpop_header, client_jwk)
@@ -350,6 +357,9 @@ def extract_and_validate_jwk(dpop_header: str) -> jwk.Key:
     Raises:
         ValueError: If header is malformed, missing jwk, or uses symmetric key.
     """
+    # get rid of any prefixed 'DPoP ' / 'dpop '
+    dpop_header = "".join(dpop_header.split(" ")[1:])
+
     # Use custom registry with increased header size limit for DPoP proofs
     # containing full JWKs (especially RSA keys which have large public keys)
     registry = _LargeHeaderRegistry()
@@ -388,6 +398,34 @@ def extract_and_validate_jwk(dpop_header: str) -> jwk.Key:
         raise ValueError("DPoP proof jwk must not contain a private key")
 
     return client_jwk
+
+
+def compute_ath(access_token: str | bytes) -> str:
+    """
+    Compute base64url(SHA-256(token)) per RFC 9449 4.2.
+
+    "ath: Hash of the access token. The value MUST be the result
+    of a base64url encoding (as defined in Section 2 of [RFC7515])
+    the SHA-256 [SHS] hash of the ASCII encoding of the associated
+    access token's value."
+
+    Args:
+        access_token (str | bytes): The access token (can be string or bytes).
+
+    Returns:
+        str: Base64url-encoded SHA-256 hash.
+    """
+    if isinstance(access_token, str):
+        token_bytes = access_token.encode("ascii")
+    elif isinstance(access_token, bytes):
+        token_bytes = access_token
+    else:
+        raise TypeError(
+            f"access_token must be str or bytes, not {type(access_token).__name__}"
+        )
+
+    digest = hashlib.sha256(token_bytes).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
 
 
 def _verify_signature_and_claims(
@@ -538,37 +576,6 @@ def _validate_ath(dpop_claims: Dict[str, Any], access_token: str) -> None:
             f"     expected_ath: {expected_ath}"
             f"  dpop_claims.ath: {dpop_claims.get('ath')}"
         )
-
-
-def compute_ath(access_token: str | bytes) -> str:
-    """
-    Compute base64url(SHA-256(token)) per RFC 9449 4.2.
-
-    "ath: Hash of the access token. The value MUST be the result
-    of a base64url encoding (as defined in Section 2 of [RFC7515])
-    the SHA-256 [SHS] hash of the ASCII encoding of the associated
-    access token's value."
-
-    Args:
-        access_token (str | bytes): The access token (can be string or bytes).
-
-    Returns:
-        str: Base64url-encoded SHA-256 hash.
-    """
-    # TODO FIXME REMOVE
-    print(f"access_token from compute_ath in authutils: {access_token}")
-
-    if isinstance(access_token, str):
-        token_bytes = access_token.encode("ascii")
-    elif isinstance(access_token, bytes):
-        token_bytes = access_token
-    else:
-        raise TypeError(
-            f"access_token must be str or bytes, not {type(access_token).__name__}"
-        )
-
-    digest = hashlib.sha256(token_bytes).digest()
-    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
 
 
 def _get_token_jkt(access_token: str) -> str:
