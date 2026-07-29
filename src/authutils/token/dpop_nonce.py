@@ -8,9 +8,13 @@ import time
 import os
 from typing import Optional
 
+from cdislogging import get_logger
+
 from joserfc import jwt
 from joserfc.jwk import OctKey
-from joserfc.errors import JoseError
+from joserfc.errors import BadSignatureError, InvalidPayloadError, JoseError
+
+logging = get_logger(__name__)
 
 
 def _get_shared_secret(secret: str | None = None) -> Optional[str]:
@@ -87,5 +91,11 @@ def verify_stateless_nonce(client_nonce: str, secret: str | None = None) -> bool
             return False
 
         return claims.get("purpose") == "dpop_nonce"
-    except (JoseError, TypeError):
+    except (JoseError, TypeError, BadSignatureError, InvalidPayloadError) as exc:
+        logging.debug(f"invalid nonce", exc_info=True)
+        return False
+    except Exception as exc:
+        logging.exception(
+            f"unknown error when attempting to verify nonce. Returning False / invalid."
+        )
         return False
