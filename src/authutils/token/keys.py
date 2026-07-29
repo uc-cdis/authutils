@@ -360,7 +360,7 @@ def get_any_public_key_for_token(
     try:
         # Fetch JWKS from issuer
         logger.info(f"hitting keys URL from iss: {iss}, keys_url: {keys_url}...")
-        response = httpx.get(keys_url, timeout=10)
+        response = httpx.get(keys_url, timeout=httpx.Timeout(timeout=10.0))
         response.raise_for_status()
         jwks_data = response.json()
 
