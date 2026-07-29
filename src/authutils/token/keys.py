@@ -364,6 +364,12 @@ def get_any_public_key_for_token(
         response.raise_for_status()
         jwks_data = response.json()
 
+        if not jwks_data or isinstance(jwks_data, str):
+            logger.error(f"invalid jwks data: {jwks_data}")
+            raise JWTError(
+                f"Could not fetch JWKS from {keys_url}. Response JSON is empty or a string."
+            )
+
         # Safely extract keys array (handles root dict or fallback list)
         raw_keys = (
             jwks_data.get("keys", []) if isinstance(jwks_data, dict) else jwks_data
@@ -381,8 +387,9 @@ def get_any_public_key_for_token(
             # Official .well-known JWKS format: {"kid": "...", "kty": "RSA", ...}
             elif isinstance(item, dict) and "kid" in item:
                 keys_by_id[item["kid"]] = item
-
     except Exception as exc:
+        # broadly catch all errors so we can log them and return a general JWTError
+        # to caller
         logger.error(exc, stack_info=True, exc_info=True)
         raise JWTError(f"Could not fetch JWKS from {keys_url}: {str(exc)}")
 
