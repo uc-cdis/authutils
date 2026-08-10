@@ -3,7 +3,6 @@
 global variables for auth
 """
 
-
 ROLES = {
     "ADMIN": "admin",
     "CREATE": "create",
