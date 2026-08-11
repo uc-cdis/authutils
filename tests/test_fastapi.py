@@ -36,7 +36,7 @@ def async_client(default_scopes, default_audience, mock_async_get, iss):
             access_token(
                 *default_scopes,
                 allowed_issuers=["https://right.example.com"],
-                purpose="access"
+                purpose="access",
             )
         )
     ):
@@ -89,6 +89,36 @@ def test_force_issuer_wrong_issuer(
 
 def test_issuers_whitelist(auth_header, async_client):
     assert async_client.get("/whitelist", headers=dict(auth_header)).status_code == 403
+
+
+def test_rejected_token_does_not_poison_later_requests(
+    async_client, auth_header, claims, token_headers, rsa_private_key
+):
+    """
+    Regression Test for authutils.token.fastapi.access_token()
+
+    A rejected token must not affect the next request's issuer resolution.
+
+    The issuer is derived from the incoming token whenever the caller did not
+    pin one. Previously, the iss value was cached to a global, so the
+    first request seen would decide the issuer for every later request, and a
+    single unauthenticated junk `iss` would 403 all subsequent valid tokens for
+    the life of the process.
+    """
+    bad_claims = claims.copy()
+    bad_claims["iss"] = "https://attacker.example.com"
+    bad_token = jwt.encode(
+        bad_claims, headers=token_headers, key=rsa_private_key, algorithm="RS256"
+    )
+
+    assert (
+        async_client.get(
+            "/whoami", headers={"Authorization": f"Bearer {bad_token}"}
+        ).status_code
+        == 403
+    )
+
+    assert async_client.get("/whoami", headers=dict(auth_header)).status_code == 200
 
 
 def test_bad_token(async_client, auth_header):

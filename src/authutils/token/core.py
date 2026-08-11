@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 import jwt
 from collections.abc import Callable
 
@@ -16,25 +16,60 @@ from cdislogging import get_logger
 
 logging = get_logger(__name__)
 
+# Timeout for each outbound key-discovery request.
+# NOTE: the discovery doc here and the JWKS fetch in token.keys both use
+# it, so a cold lookup can take 2x this.
+KEYS_REQUEST_TIMEOUT = 10.0
+
 
 def get_keys_url(issuer, force_issuer=None):
     """
     Prefer OIDC discovery doc, but fall back on Fence-specific /jwt/keys for backwards compatibility (or if `force_issuer` is True)
     """
-    jwt_keys_url = "/".join([issuer.strip("/"), "jwt", "keys"])
-    if force_issuer:
+    jwt_keys_url, openid_cfg_path = _keys_url_candidates(issuer, force_issuer)
+    if openid_cfg_path is None:
         return jwt_keys_url
 
-    openid_cfg_path = "/".join(
-        [issuer.strip("/"), ".well-known", "openid-configuration"]
-    )
     try:
-        jwks_uri = httpx.get(openid_cfg_path, timeout=10).json().get("jwks_uri", "")
+        jwks_uri = (
+            httpx2.get(
+                openid_cfg_path, timeout=httpx2.Timeout(timeout=KEYS_REQUEST_TIMEOUT)
+            )
+            .json()
+            .get("jwks_uri", "")
+        )
         return jwks_uri
     except Exception as exc:
-        logging.info(
-            f"Could not get public keys from: {openid_cfg_path}. Falling back to iss: {jwt_keys_url}. Exception: {exc}"
-        )
+        _log_discovery_fallback(openid_cfg_path, jwt_keys_url, exc)
+        return jwt_keys_url
+
+
+async def get_keys_url_async(issuer: str, force_issuer: bool | None = None) -> str:
+    """
+    Async counterpart of get_keys_url.
+
+    Same discovery-then-fallback behavior; issues the OIDC discovery request
+    on an AsyncClient so an async caller does not block its event loop.
+
+    Args:
+        issuer (str): The token issuer.
+        force_issuer (bool | None): Skip discovery and use /jwt/keys.
+
+    Returns:
+        str: The keys URL to fetch.
+    """
+    jwt_keys_url, openid_cfg_path = _keys_url_candidates(issuer, force_issuer)
+    if openid_cfg_path is None:
+        return jwt_keys_url
+
+    try:
+        async with httpx2.AsyncClient() as client:
+            response = await client.get(
+                openid_cfg_path, timeout=httpx2.Timeout(timeout=KEYS_REQUEST_TIMEOUT)
+            )
+        return response.json().get("jwks_uri", "")
+    except Exception as exc:
+        _log_discovery_fallback(openid_cfg_path, jwt_keys_url, exc)
         return jwt_keys_url
 
 
@@ -185,9 +220,11 @@ def validate_jwt(
 
     # iss
     # Check that the issuer of the token has the expected hostname.
+    # Read with .get: a token carrying no iss at all must fail as a JWTError
     if allowed_issuers:
-        if token["iss"] not in allowed_issuers:
-            msg = f"invalid issuer {token['iss']}; expected one of: {allowed_issuers}"
+        token_iss = token.get("iss")
+        if token_iss not in allowed_issuers:
+            msg = f"invalid issuer {token_iss}; expected one of: {allowed_issuers}"
             raise JWTError(msg)
 
     # scope
@@ -221,3 +258,35 @@ def validate_jwt(
             raise JWTError("token is denylisted")
 
     return token
+
+
+def _keys_url_candidates(
+    issuer: str, force_issuer: bool | None = None
+) -> tuple[str, str | None]:
+    """
+    Build the legacy keys URL and, unless forced, the OIDC discovery URL.
+
+    Args:
+        issuer (str): The token issuer.
+        force_issuer (bool | None): Skip discovery and use /jwt/keys.
+
+    Returns:
+        tuple[str, str | None]: The /jwt/keys URL, and the discovery URL or
+        None when discovery should be skipped.
+    """
+    jwt_keys_url = "/".join([issuer.strip("/"), "jwt", "keys"])
+    if force_issuer:
+        return jwt_keys_url, None
+    openid_cfg_path = "/".join(
+        [issuer.strip("/"), ".well-known", "openid-configuration"]
+    )
+    return jwt_keys_url, openid_cfg_path
+
+
+def _log_discovery_fallback(
+    openid_cfg_path: str, jwt_keys_url: str, exc: Exception
+) -> None:
+    """Log that OIDC discovery failed and the legacy keys URL will be used."""
+    logging.info(
+        f"Could not get public keys from: {openid_cfg_path}. Falling back to iss: {jwt_keys_url}. Exception: {exc}"
+    )

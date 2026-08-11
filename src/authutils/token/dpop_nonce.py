@@ -6,30 +6,19 @@ The nonce is itself a JWT signed with a shared secret.
 
 import time
 import os
-from typing import Optional
 
 from cdislogging import get_logger
 
 from joserfc import jwt
 from joserfc.jwk import OctKey
-from joserfc.errors import BadSignatureError, InvalidPayloadError, JoseError
+from joserfc.errors import JoseError
 
 logging = get_logger(__name__)
 
 
-def _get_shared_secret(secret: str | None = None) -> Optional[str]:
-    """Get DPOP_SHARED_SECRET from environment (read at runtime for testability)."""
-    return secret or os.getenv("DPOP_SHARED_SECRET")
-
-
-def _get_nonce_ttl() -> int:
-    """Get DPOP_NONCE_TTL from environment (read at runtime for testability)."""
-    return int(os.getenv("DPOP_NONCE_TTL", "300"))
-
-
 def generate_stateless_nonce(secret: str | None = None) -> str:
     """
-    Mint a symmetric nonce token valid for DPOP_NONCE_TTL_SECONDS.
+    Mint a symmetric nonce token valid for DPOP_NONCE_TTL seconds.
 
     Returns:
         str: HS256-signed JWT nonce token.
@@ -60,9 +49,12 @@ def verify_stateless_nonce(client_nonce: str, secret: str | None = None) -> bool
 
     Args:
         client_nonce (str): Nonce token to verify.
+        secret (str | None): Shared secret. Defaults to DPOP_SHARED_SECRET.
 
     Returns:
-        bool: True if nonce is valid and within TTL, False otherwise.
+        bool: True if nonce is valid and within TTL, False otherwise. Never
+        raises: every failure mode, including an unexpected one, is reported
+        as an invalid nonce.
     """
     if not isinstance(client_nonce, str):
         return False
@@ -76,6 +68,8 @@ def verify_stateless_nonce(client_nonce: str, secret: str | None = None) -> bool
         token = jwt.decode(
             client_nonce,
             key,
+            # This symetric alg uses secret key for both signing and verifying,
+            # so only parties with the shared key can validate.
             algorithms=["HS256"],
         )
         claims = token.claims
@@ -84,18 +78,30 @@ def verify_stateless_nonce(client_nonce: str, secret: str | None = None) -> bool
         iat = claims.get("iat")
         exp = claims.get("exp")
 
-        if exp is not None and exp < now:
+        # exp is required, not just checked when present
+        if exp is None or exp < now:
             return False
 
-        if iat is not None and exp is not None and exp < iat:
+        if iat is not None and exp < iat:
             return False
 
         return claims.get("purpose") == "dpop_nonce"
-    except (JoseError, TypeError, BadSignatureError, InvalidPayloadError) as exc:
-        logging.debug(f"invalid nonce", exc_info=True)
+    except (JoseError, TypeError):
+        # BadSignatureError and InvalidPayloadError are JoseError subclasses.
+        logging.debug("invalid nonce", exc_info=True)
         return False
-    except Exception as exc:
+    except Exception:
         logging.exception(
-            f"unknown error when attempting to verify nonce. Returning False / invalid."
+            "unknown error when attempting to verify nonce. Returning False / invalid."
         )
         return False
+
+
+def _get_shared_secret(secret: str | None = None) -> str | None:
+    """Get DPOP_SHARED_SECRET from environment (read at runtime for testability)."""
+    return secret or os.getenv("DPOP_SHARED_SECRET")
+
+
+def _get_nonce_ttl() -> int:
+    """Get DPOP_NONCE_TTL from environment (read at runtime for testability)."""
+    return int(os.getenv("DPOP_NONCE_TTL", "300"))

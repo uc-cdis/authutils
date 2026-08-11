@@ -5,7 +5,7 @@ import jwt
 
 import flask
 import pytest
-import httpx
+import httpx2
 
 from authutils.errors import JWTError, JWTAudienceError, JWTExpiredError, JWTScopeError
 from authutils.token.keys import get_public_key
@@ -135,6 +135,32 @@ def test_invalid_iss_rejected(
     with pytest.raises(JWTError):
         validate_jwt(
             encoded_jwt, rsa_public_key, default_audience, default_scopes, [wrong_iss]
+        )
+
+
+def test_token_without_iss_rejected_as_jwt_error(
+    claims, token_headers, rsa_private_key, rsa_public_key, default_audience, iss
+):
+    """
+    A token carrying no iss at all raises JWTError, not KeyError.
+
+    A caller doing `except JWTError: return 401` would otherwise emit a 500 for
+    an attacker-supplied token that simply omits the claim.
+    """
+    claims_without_iss = {k: v for k, v in claims.items() if k != "iss"}
+    encoded = jwt.encode(
+        claims_without_iss,
+        headers=token_headers,
+        key=rsa_private_key,
+        algorithm="RS256",
+    )
+
+    with pytest.raises(JWTError):
+        validate_jwt(
+            encoded,
+            rsa_public_key,
+            aud=default_audience,
+            allowed_issuers=[iss],
         )
 
 
@@ -347,9 +373,9 @@ def test_get_public_key(app, example_keys_response, mock_get):
     iss = app.config["USER_API"]
     expected_jwt_public_keys_dict = {iss: OrderedDict(example_keys_response["keys"])}
     key = get_public_key(kid=test_kid)
-    # httpx.get should be called twice: once attempting to get the jwks_uri from
+    # httpx2.get should be called twice: once attempting to get the jwks_uri from
     # .well-known/openid-configuration, another to actually hit the jwks_uri
-    assert httpx.get.call_count == 2
+    assert httpx2.get.call_count == 2
     assert key
     assert key == expected_key
     assert app.jwt_public_keys == expected_jwt_public_keys_dict
