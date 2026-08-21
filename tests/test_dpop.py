@@ -2823,6 +2823,30 @@ class TestValidateDpopRequestIntegration:
                 issuers=["https://example.com"],
             )
 
+    @pytest.mark.parametrize("empty", [[], None])
+    async def test_empty_issuers_rejected_even_with_public_key(self, empty, rsa_key):
+        """
+        An empty allowlist is rejected even when the caller supplies the key.
+
+        Supplying public_key skips key discovery, which is the other place the
+        allowlist is enforced, so the access token would otherwise be validated
+        with nothing constraining its iss claim.
+        """
+        access_token = _create_signed_access_token(rsa_key)
+        proof = authutils.dpop.generate_dpop_proof(
+            rsa_key, "GET", "https://example.com/api/resource", access_token
+        )
+
+        with pytest.raises(ValueError, match="issuers"):
+            await authutils.dpop.validate_dpop_request_async(
+                dpop_header=proof,
+                access_token=access_token,
+                request_method="GET",
+                request_url="https://example.com/api/resource",
+                issuers=empty,
+                public_key=rsa_key.as_pem(),
+            )
+
     @patch("authutils.dpop.get_any_public_key_for_token_async", new_callable=AsyncMock)
     @patch("authutils.dpop.token_core.validate_jwt")
     async def test_issuer_allowlist_passed_to_key_lookup(

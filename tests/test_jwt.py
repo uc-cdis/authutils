@@ -160,6 +160,7 @@ def test_token_without_iss_rejected_as_jwt_error(
             encoded,
             rsa_public_key,
             aud=default_audience,
+            scope=None,
             allowed_issuers=[iss],
         )
 
@@ -359,8 +360,37 @@ def test_validate_jwt_type_validation():
     """
     with pytest.raises(ValueError):
         validate_jwt(
-            "token", "key", aud=123, scope=None, allowed_issuers=[]
+            "token", "key", aud=123, scope=None, allowed_issuers=["https://example.com"]
         )  # aud must be str/list/None
+
+
+def test_missing_allowed_issuers_is_a_type_error(
+    encoded_jwt, rsa_public_key, default_audience, default_scopes
+):
+    """
+    Omitting `allowed_issuers` fails at call time rather than skipping the check.
+
+    It has no default, so a caller upgrading from a version where the issuer
+    allowlist was optional cannot silently end up accepting any issuer.
+    """
+    with pytest.raises(TypeError):
+        validate_jwt(encoded_jwt, rsa_public_key, default_audience, default_scopes)
+
+
+@pytest.mark.parametrize("empty", [[], set()])
+def test_empty_allowed_issuers_rejected(
+    empty, encoded_jwt, rsa_public_key, default_audience, default_scopes
+):
+    """
+    An empty allowlist is rejected rather than read as "any issuer is fine".
+
+    Passing the check with an empty list would mean every issuer is accepted,
+    which is the opposite of what an empty allowlist reads as.
+    """
+    with pytest.raises(ValueError, match="non-empty"):
+        validate_jwt(
+            encoded_jwt, rsa_public_key, default_audience, default_scopes, empty
+        )
 
 
 def test_get_public_key(app, example_keys_response, mock_get):

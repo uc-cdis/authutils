@@ -252,6 +252,14 @@ async def validate_dpop_request_async(
         raise ValueError("Invalid DPoP proof: Empty string / None provided")
     if not access_token:
         raise ValueError("Invalid access token: Empty string / None provided")
+    # Checked here rather than only inside key discovery: a caller supplying its
+    # own public_key skips discovery entirely, and an empty allowlist would then
+    # reach access token validation with nothing constraining `iss`.
+    if not issuers:
+        raise ValueError(
+            "Invalid issuers: a non-empty allowlist is required to validate the "
+            "access token's iss claim"
+        )
 
     _reject_bearer_prefixed_token(access_token)
 
