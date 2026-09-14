@@ -13,6 +13,8 @@ from joserfc import jwt
 from joserfc.jwk import OctKey
 from joserfc.errors import JoseError
 
+from authutils.errors import DPoPConfigurationError
+
 logging = get_logger(__name__)
 
 
@@ -24,11 +26,15 @@ def generate_stateless_nonce(secret: str | None = None) -> str:
         str: HS256-signed JWT nonce token.
 
     Raises:
-        RuntimeError: If DPOP_SHARED_SECRET environment variable not set.
+        DPoPConfigurationError: If no shared secret is configured. A client can reach this
+            by sending a nonce claim, so it must not be reported as a client error.
     """
     shared_secret = _get_shared_secret(secret=secret)
     if not shared_secret:
-        raise RuntimeError("DPOP_SHARED_SECRET environment variable not set")
+        raise DPoPConfigurationError(
+            "Cannot mint a DPoP nonce: no shared secret is configured. Set the "
+            "DPOP_SHARED_SECRET environment variable, or pass `secret`."
+        )
 
     iat: int = int(time.time())
     exp: int = iat + _get_nonce_ttl()

@@ -1,6 +1,17 @@
 from cdiserrors import AuthNError as CDISAuthNError
 
 
+class DPoPConfigurationError(RuntimeError):
+    """
+    Raised when DPoP is in use but the deployment has not configured it.
+
+    A RuntimeError subclass because that is what callers already catch, but named so that a
+    deployment fault is distinguishable from a client one: it is reachable on a request path
+    a client controls, and answering such a request with a 4xx would report a server
+    misconfiguration as the caller's mistake.
+    """
+
+
 class InvalidNonceError(CDISAuthNError):
     """
     Base for the DPoP nonce errors, so a caller can catch either with one name.

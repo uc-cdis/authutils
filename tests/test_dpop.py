@@ -1055,6 +1055,78 @@ class TestProofFreshnessAndReplay:
                 jti_seen_callback=jti_seen_callback,
             )
 
+    def test_rejected_proof_does_not_consume_its_jti(self):
+        """
+        A proof rejected by an earlier check leaves its jti unrecorded, so the client can
+        retry. The callback records as well as reports, so consuming a jti for a proof that
+        was never accepted would tell the retry its fresh proof is a replay.
+        """
+        key = jwk.ECKey.generate_key(crv="P-256")
+        signing_key = jwk.RSAKey.generate_key(2048)
+        # Distinct `sub` claims so the two tokens are different strings, and so hash to
+        # different ath values.
+        bound_token = jwt.encode(
+            {"alg": "RS256"},
+            {"sub": "user-1", "cnf": {"jkt": key.thumbprint()}},
+            signing_key,
+        )
+        other_token = jwt.encode(
+            {"alg": "RS256"},
+            {"sub": "user-2", "cnf": {"jkt": key.thumbprint()}},
+            signing_key,
+        )
+        assert bound_token != other_token
+
+        recorded = []
+
+        def jti_seen_callback(jti):
+            recorded.append(jti)
+            return False
+
+        # The proof's ath covers `other_token`, so presenting it with `bound_token` fails.
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", access_token=other_token
+        )
+        with pytest.raises(ValueError, match="ath"):
+            authutils.dpop.validate_dpop_proof(
+                proof,
+                "GET",
+                "https://example.com/resource",
+                unvalidated_access_token=bound_token,
+                jti_seen_callback=jti_seen_callback,
+            )
+        assert recorded == [], "a rejected proof must not consume its jti"
+
+        # A key binding failure must not consume it either.
+        mismatched_token = jwt.encode(
+            {"alg": "RS256"}, {"cnf": {"jkt": "some-other-thumbprint"}}, signing_key
+        )
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", access_token=mismatched_token
+        )
+        with pytest.raises(ValueError, match="[Kk]ey binding"):
+            authutils.dpop.validate_dpop_proof(
+                proof,
+                "GET",
+                "https://example.com/resource",
+                unvalidated_access_token=mismatched_token,
+                jti_seen_callback=jti_seen_callback,
+            )
+        assert recorded == [], "a rejected proof must not consume its jti"
+
+        # An accepted proof still records one.
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/resource", access_token=bound_token
+        )
+        authutils.dpop.validate_dpop_proof(
+            proof,
+            "GET",
+            "https://example.com/resource",
+            unvalidated_access_token=bound_token,
+            jti_seen_callback=jti_seen_callback,
+        )
+        assert len(recorded) == 1
+
     def test_distinct_jtis_both_accepted_with_callback(self):
         """Two separately generated proofs have distinct jtis and both pass."""
         key = jwk.ECKey.generate_key(crv="P-256")

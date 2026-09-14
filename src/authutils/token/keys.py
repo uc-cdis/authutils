@@ -276,7 +276,9 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
     )
     path = get_keys_url(user_api, force_issuer)
     try:
-        jwt_public_keys = httpx2.get(path).json()["keys"]
+        jwt_public_keys = httpx2.get(
+            path, timeout=httpx2.Timeout(timeout=KEYS_REQUEST_TIMEOUT)
+        ).json()["keys"]
     except:
         raise JWTError(
             "Attempted to refresh public keys for {},"

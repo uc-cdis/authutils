@@ -322,8 +322,8 @@ def validate_dpop_proof(
     - Time-based validation (iat, exp)
     - htm (HTTP method) validation
     - htu (URL) validation
-    - ath (access token hash) validation if provided
     - nonce validation if required
+    - ath (access token hash) validation if provided
     - jti replay rejection if jti_seen_callback is provided
 
     Args:
@@ -389,17 +389,19 @@ def validate_dpop_proof(
             as_resource_server=as_resource_server,
         )
 
+    if unvalidated_access_token:
+        _reject_bearer_prefixed_token(unvalidated_access_token)
+        _validate_ath(dpop_claims, unvalidated_access_token)
+        _validate_key_binding(client_jwk, unvalidated_access_token)
+
+    # Last, after every other check: a caller's callback is expected to RECORD the jti as
+    # well as report on it when it's accepted / valid
     if jti_seen_callback is not None:
         if jti_seen_callback(dpop_claims["jti"]):
             raise ValueError(
                 "DPoP proof replay detected: jti has already been used "
                 "within its validity window"
             )
-
-    if unvalidated_access_token:
-        _reject_bearer_prefixed_token(unvalidated_access_token)
-        _validate_ath(dpop_claims, unvalidated_access_token)
-        _validate_key_binding(client_jwk, unvalidated_access_token)
 
     return dpop_claims, client_jwk
 

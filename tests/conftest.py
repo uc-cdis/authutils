@@ -207,8 +207,10 @@ def mock_get(monkeypatch, example_keys_response):
         defaults.update(urls_to_responses)
         urls_to_responses = defaults
 
-        def get(url):
+        def get(url, **kwargs):
             """Define a mock ``get`` function to return a mocked response."""
+            # **kwargs so the stub accepts what the real `httpx2.get` accepts, such as
+            # `timeout`
             mocked_response = mock.MagicMock(httpx2.Response)
             mocked_response.json.return_value = urls_to_responses[url]
             return mocked_response
