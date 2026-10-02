@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "authutils"
-version = "8.0.1"
+version = "9.0.0"
 description = "Gen3 auth utility functions"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -15,13 +15,14 @@ werkzeug = ">=3.1.5"
 xmltodict = "~=0.9"
 
 authlib = ">=1.6.6"
-httpx = ">=0.23.0,<1.0.0"
-pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
+httpx2 = ">=2.9.1"
+pyjwt = {version = ">=2.11.0,<3.0", extras = ["crypto"]}
 cryptography = ">=50.0.0"
 
 Flask = {version = "*", optional = true}
 fastapi = {version = "*", optional = true}
 datamodelutils = { version = "*", optional = true }
+joserfc = ">=1.7.3"
 
 [tool.poetry.extras]
 flask = ["Flask"]
@@ -30,6 +31,7 @@ datamodelutils = ["datamodelutils"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
+pytest-asyncio = "*"
 mock = "*"
 pytest-cov = "*"
 pytest-flask = "*"
@@ -43,3 +45,8 @@ build-backend = "poetry.masonry.api"
 [tool.deptry]
 known_first_party = ["authutils"]
 extend_exclude = ["src/authutils/testing"]
+
+[tool.pytest.ini_options]
+# Every async test runs on asyncio without a per-test mark. The library is
+# asyncio-only (token/fastapi.py depends on asyncio directly).
+asyncio_mode = "auto"

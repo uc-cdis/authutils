@@ -1,7 +1,7 @@
 from asyncio import Future, get_event_loop
 from collections import OrderedDict
 
-import httpx
+import httpx2
 from fastapi import Security, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.status import HTTP_403_FORBIDDEN
@@ -53,46 +53,54 @@ def access_token(
         allowed_issuers = [issuer]
 
     async def getter(token: HTTPAuthorizationCredentials = Security(bearer)):
-        nonlocal issuer, allowed_issuers
         assert token.scheme.lower() == "bearer"
         token = token.credentials
         loop = get_event_loop()
 
+        # Per-request copies. These are derived from the incoming
+        # token when the caller did not pin them, so persisting
+        # would let the first request seen decide the issuer for every
+        # later request -- one junk `iss` would 403 all subsequent valid tokens
+        # for the life of the process.
+        request_issuer = issuer
+        request_allowed_issuers = allowed_issuers
+
         # get kid and issuer
         try:
             kid = await loop.run_in_executor(None, core.get_kid, token)
-            if issuer is None:
-                issuer = await loop.run_in_executor(None, core.get_iss, token)
+            if request_issuer is None:
+                request_issuer = await loop.run_in_executor(None, core.get_iss, token)
         except JWTError as e:
             raise HTTPException(
                 status_code=HTTP_403_FORBIDDEN, detail="Bad bearer token: " + str(e)
             )
-        if not allowed_issuers:
-            allowed_issuers = [issuer]
-        if issuer not in allowed_issuers:
+        if not request_allowed_issuers:
+            request_allowed_issuers = [request_issuer]
+        if request_issuer not in request_allowed_issuers:
             raise HTTPException(
                 status_code=HTTP_403_FORBIDDEN,
-                detail="Bad bearer token: issuer is not allowed: " + issuer,
+                detail="Bad bearer token: issuer is not allowed: " + request_issuer,
             )
 
         # get public key from cache, or fetch from issuer
-        pub_keys = _jwt_public_keys.get(issuer)
+        pub_keys = _jwt_public_keys.get(request_issuer)
         if not pub_keys:
-            pub_keys = _jwt_public_keys[issuer] = Future()
+            pub_keys = _jwt_public_keys[request_issuer] = Future()
             try:
-                async with httpx.AsyncClient() as client:
-                    resp = await client.get(core.get_keys_url(issuer, force_issuer))
+                keys_url = await core.get_keys_url_async(request_issuer, force_issuer)
+                async with httpx2.AsyncClient() as client:
+                    resp = await client.get(keys_url)
                     resp.raise_for_status()
                     pub_keys.set_result(
                         OrderedDict(get_pem_key(key) for key in resp.json()["keys"])
                     )
             except Exception as e:
-                _jwt_public_keys.pop(issuer)
+                _jwt_public_keys.pop(request_issuer)
                 pub_keys.set_exception(
                     HTTPException(
                         status_code=HTTP_403_FORBIDDEN,
                         detail="Cannot fetch pubkey from issuer {}: {}".format(
-                            issuer, str(e)
+                            request_issuer, str(e)
                         ),
                     )
                 )
@@ -101,7 +109,7 @@ def access_token(
         if not pub_key:
             raise HTTPException(
                 status_code=HTTP_403_FORBIDDEN,
-                detail="Bad bearer token: kid not found in issuer: " + issuer,
+                detail="Bad bearer token: kid not found in issuer: " + request_issuer,
             )
 
         # decode and validate the token
@@ -113,7 +121,7 @@ def access_token(
                 pub_key,
                 audience,
                 scopes,
-                allowed_issuers,
+                request_allowed_issuers,
             )
 
             if purpose:
