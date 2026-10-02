@@ -3,10 +3,10 @@ Unit tests for authutils.token.keys module, specifically
 for `get_any_public_key_for_token_async`
 """
 
+import asyncio
 import time
 from unittest.mock import AsyncMock, Mock, patch
 
-import anyio
 import pytest
 from joserfc import jwk, jwt
 
@@ -47,7 +47,6 @@ def other_rsa_key():
     return jwk.RSAKey.generate_key(2048).as_dict(private=False)
 
 
-@pytest.mark.anyio
 class TestGetAnyPublicKeyForToken:
     """Tests for get_any_public_key_for_token_async."""
 
@@ -512,9 +511,9 @@ class TestGetAnyPublicKeyForToken:
             except Exception as exc:
                 errors.append(exc)
 
-        async with anyio.create_task_group() as tg:
+        async with asyncio.TaskGroup() as tg:
             for token in tokens:
-                tg.start_soon(fetch, token)
+                tg.create_task(fetch(token))
 
         assert not errors
         assert (
@@ -580,7 +579,6 @@ class TestGetAnyPublicKeyForToken:
             await _get_key(valid_token)
 
 
-@pytest.mark.anyio
 class TestAllowlistIsMandatory:
     """
     The allowlist is the only thing constraining which host key discovery
@@ -630,7 +628,6 @@ class TestAllowlistIsMandatory:
         assert result == keys_module.get_pem_key(mock_rsa_key)[1]
 
 
-@pytest.mark.anyio
 class TestPrivateAddressIssuers:
     """
     An allowlisted issuer is fetched regardless of where it resolves. Gen3 runs
@@ -671,7 +668,6 @@ class TestPrivateAddressIssuers:
         assert result == keys_module.get_pem_key(mock_rsa_key)[1]
 
 
-@pytest.mark.anyio
 class TestTransportRefusesNonHttpUrls:
     """
     Non-http(s) URLs are refused by httpx, which is why authutils does not
@@ -707,7 +703,6 @@ class TestTransportRefusesNonHttpUrls:
             await _get_key(_make_token())
 
 
-@pytest.mark.anyio
 class TestIssuerAllowlist:
     """
     The `iss` claim is unverified at key-discovery time, and discovery turns it
@@ -765,7 +760,6 @@ class TestIssuerAllowlist:
         mock_get.assert_not_called()
 
 
-@pytest.mark.anyio
 class TestAsyncKeyDiscovery:
     """
     get_any_public_key_for_token_async must enforce every rule the synchronous
@@ -831,10 +825,10 @@ class TestAsyncKeyDiscovery:
             nonlocal ticks
             while not stop:
                 ticks += 1
-                await anyio.sleep(0.001)
+                await asyncio.sleep(0.001)
 
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(ticker)
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(ticker())
             await _get_key(_make_token())
             stop = True
 
@@ -890,7 +884,7 @@ def _stub_async_jwks(
 
     async def fake_get_keys_url_async(iss, force_issuer=None):
         if latency:
-            await anyio.sleep(latency)
+            await asyncio.sleep(latency)
         return keys_url
 
     class FakeAsyncClient:
@@ -906,7 +900,7 @@ def _stub_async_jwks(
         async def get(self, url, *args, **kwargs):
             fetched.append(url)
             if latency:
-                await anyio.sleep(latency)
+                await asyncio.sleep(latency)
             return _jwks_response(payload)
 
     monkeypatch.setattr(

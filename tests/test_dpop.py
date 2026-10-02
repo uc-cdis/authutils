@@ -16,6 +16,7 @@ structure (https://datatracker.ietf.org/doc/html/rfc9449).
 - validate_dpop_request integration (the combined convenience wrapper)
 """
 
+import asyncio
 import base64
 import hashlib
 import json
@@ -24,7 +25,6 @@ import time
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
-import anyio
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -1373,7 +1373,6 @@ class TestProofFreshnessAndReplay:
         ), "validate_dpop_proof must normalize JoseError to ValueError"
 
 
-@pytest.mark.anyio
 class TestKeyBindingDefense:
     """Bidirectional Binding (Stolen Token Defense)"""
 
@@ -2277,7 +2276,6 @@ class TestDpopProofNonceRequirement:
         assert dpop_claims.get("nonce") == nonce
 
 
-@pytest.mark.anyio
 class TestValidateDpopRequestIntegration:
     """
     Tests for validate_dpop_request -- the wrapper that combines proof
@@ -3164,7 +3162,6 @@ class TestValidateDpopRequestIntegration:
             )
 
 
-@pytest.mark.anyio
 class TestValidateDpopRequestAsync:
     """
     validate_dpop_request_async must reach the same verdict as the sync
@@ -3223,7 +3220,7 @@ class TestValidateDpopRequestAsync:
         )
 
         async def fake_get_key(token, allowed_issuers=None):
-            await anyio.sleep(0)
+            await asyncio.sleep(0)
             return rsa_key.as_pem()
 
         mock_get_key_async.side_effect = fake_get_key
@@ -3275,7 +3272,7 @@ class TestValidateDpopRequestAsync:
         )
 
         async def slow_get_key(token, allowed_issuers=None):
-            await anyio.sleep(0.05)
+            await asyncio.sleep(0.05)
             return rsa_key.as_pem()
 
         mock_get_key_async.side_effect = slow_get_key
@@ -3288,10 +3285,10 @@ class TestValidateDpopRequestAsync:
             nonlocal ticks
             while not stop:
                 ticks += 1
-                await anyio.sleep(0.001)
+                await asyncio.sleep(0.001)
 
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(ticker)
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(ticker())
             await authutils.dpop.validate_dpop_request_async(
                 dpop_header=proof,
                 access_token=access_token,

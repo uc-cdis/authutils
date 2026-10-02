@@ -30,12 +30,6 @@ KEYS_URL = "https://user-api.test.net/jwt/keys"
 
 
 @pytest.fixture(scope="session")
-def anyio_backend():
-    """Run every `@pytest.mark.anyio` test on asyncio only."""
-    return "asyncio"
-
-
-@pytest.fixture(scope="session")
 def iss():
     """
     Return the token issuer (``USER_API``).

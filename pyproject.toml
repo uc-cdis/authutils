@@ -31,6 +31,7 @@ datamodelutils = ["datamodelutils"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
+pytest-asyncio = "*"
 mock = "*"
 pytest-cov = "*"
 pytest-flask = "*"
@@ -44,3 +45,8 @@ build-backend = "poetry.masonry.api"
 [tool.deptry]
 known_first_party = ["authutils"]
 extend_exclude = ["src/authutils/testing"]
+
+[tool.pytest.ini_options]
+# Every async test runs on asyncio without a per-test mark. The library is
+# asyncio-only (token/fastapi.py depends on asyncio directly).
+asyncio_mode = "auto"
