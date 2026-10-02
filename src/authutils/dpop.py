@@ -26,7 +26,7 @@ import base64
 import time
 from collections.abc import Callable, Collection
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from cdislogging import get_logger
 from joserfc import jwt, jwk, jws
@@ -210,7 +210,8 @@ async def validate_dpop_request_async(
         access_token (str): The JWT access token string from the Authorization header.
         request_method (str): The HTTP method of the incoming request.
         request_url (str): The full URL of the incoming request (scheme + host +
-            path), as the CLIENT saw it.
+            path), as the CLIENT saw it. The path may be percent-encoded or
+            decoded: both it and `htu` are percent-decoded before comparing.
         issuers (list[str]): Allowed token issuers whitelist, exact-matched
             BEFORE any key discovery. Required and non-empty: `iss` is an
             unverified claim, so this list is what keeps an attacker from
@@ -330,7 +331,8 @@ def validate_dpop_proof(
         dpop_header (str): The DPoP proof JWT string from the DPoP header.
         request_method (str): The HTTP method of the incoming request.
         request_url (str): The full URL of the incoming request (scheme + host +
-            path), as the CLIENT saw it.
+            path), as the CLIENT saw it. The path may be percent-encoded or
+            decoded: both it and `htu` are percent-decoded before comparing.
         unvalidated_access_token (str | None): Optional access token to validate ath claim against.
         require_nonce (bool): Whether to require and validate a nonce.
         secret (str | None): Optional secret key for stateless nonce verification.
@@ -868,9 +870,14 @@ def _validate_proof_claims(
         )
 
     # Normalize BOTH sides so that an explicit default port (e.g. :443 added by
-    # a reverse proxy) does not cause a mismatch.
+    # a reverse proxy) does not cause a mismatch. Both sides are also
+    # percent-decoded: ASGI/WSGI frameworks hand the server an already-decoded
+    # path while the client signs the encoded one, so a proof for
+    # ".../my%20file" would otherwise never match its own request. Decoding
+    # happens after `_get_url` has split off any query, so an encoded "%3F"
+    # cannot turn part of the path into a query string.
     actual_url = _get_url(request_url)
-    if actual_url != _get_url(htu_value):
+    if unquote(actual_url) != unquote(_get_url(htu_value)):
         raise ValueError(
             f"htu mismatch: request URL '{actual_url}' != proof htu '{htu_value}'"
         )

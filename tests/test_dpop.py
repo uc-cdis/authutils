@@ -902,6 +902,51 @@ class TestRequestBindingValidation:
         assert claims["htu"] == url
 
     @pytest.mark.parametrize(
+        "signed_path,request_path",
+        [
+            pytest.param("/my%20file.txt", "/my file.txt", id="space"),
+            pytest.param("/caf%C3%A9.txt", "/café.txt", id="non-ascii"),
+            pytest.param("/folder%2Ffile.txt", "/folder/file.txt", id="encoded-slash"),
+            pytest.param("/my%20file.txt", "/my%20file.txt", id="both-encoded"),
+            pytest.param("/my file.txt", "/my%20file.txt", id="only-request-encoded"),
+        ],
+    )
+    def test_htu_percent_encoding_is_normalized(self, signed_path, request_path):
+        """A proof validates whether or not the htu and request paths are percent-encoded."""
+        key = jwk.ECKey.generate_key(crv="P-256")
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", f"https://example.com{signed_path}"
+        )
+
+        claims, _ = authutils.dpop.validate_dpop_proof(
+            proof, "GET", f"https://example.com{request_path}"
+        )
+
+        assert claims["htu"] == f"https://example.com{signed_path}"
+
+    def test_htu_percent_encoded_path_still_has_to_match(self):
+        """Decoding does not let a proof for one encoded path match a different path."""
+        key = jwk.ECKey.generate_key(crv="P-256")
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/my%20file.txt"
+        )
+
+        with pytest.raises(ValueError, match="htu mismatch"):
+            authutils.dpop.validate_dpop_proof(
+                proof, "GET", "https://example.com/other%20file.txt"
+            )
+
+    def test_htu_encoded_question_mark_stays_in_the_path(self):
+        """An htu "%3F" decodes after the query is split off, so it cannot truncate the path."""
+        key = jwk.ECKey.generate_key(crv="P-256")
+        proof = authutils.dpop.generate_dpop_proof(
+            key, "GET", "https://example.com/a%3Fadmin=1"
+        )
+
+        with pytest.raises(ValueError, match="htu mismatch"):
+            authutils.dpop.validate_dpop_proof(proof, "GET", "https://example.com/a")
+
+    @pytest.mark.parametrize(
         "bad_url",
         [pytest.param("", id="empty"), pytest.param(None, id="none")],
     )
