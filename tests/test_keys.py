@@ -14,6 +14,7 @@ import authutils.token.keys as keys_module
 from authutils.errors import JWTError
 
 TEST_ISSUER = "https://example.com/issuer"
+_JWKS_URL = "https://example.com/issuer/.well-known/jwks.json"
 
 
 async def _get_key(token, **kwargs):
@@ -38,6 +39,12 @@ def mock_rsa_key():
         "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",  # pragma: allowlist secret
         "e": "AQAB",
     }
+
+
+@pytest.fixture
+def other_rsa_key():
+    """An RSA JWK whose key material differs from mock_rsa_key's."""
+    return jwk.RSAKey.generate_key(2048).as_dict(private=False)
 
 
 @pytest.mark.anyio
@@ -335,8 +342,8 @@ class TestGetAnyPublicKeyForToken:
 
         # Fetch keys for both tokens
         issuer = ["https://same-issuer.example.com"]
-        result1 = await _get_key(tokens[0], allowed_issuers=issuer)
-        result2 = await _get_key(tokens[1], allowed_issuers=issuer)
+        await _get_key(tokens[0], allowed_issuers=issuer)
+        await _get_key(tokens[1], allowed_issuers=issuer)
 
         # Should have 2 entries in cache (different kids)
         assert len(keys_module._token_public_key_cache) == 2
@@ -364,8 +371,8 @@ class TestGetAnyPublicKeyForToken:
             tokens.append(token)
 
         # Fetch keys for both tokens
-        result1 = await _get_key(tokens[0], allowed_issuers=issuers)
-        result2 = await _get_key(tokens[1], allowed_issuers=issuers)
+        await _get_key(tokens[0], allowed_issuers=issuers)
+        await _get_key(tokens[1], allowed_issuers=issuers)
 
         # Should have 2 entries in cache (different issuers)
         assert len(keys_module._token_public_key_cache) == 2
@@ -430,18 +437,36 @@ class TestGetAnyPublicKeyForToken:
     @patch("authutils.token.keys.get_keys_url_async", new_callable=AsyncMock)
     @patch("authutils.token.keys._fetch_jwks_async", new_callable=AsyncMock)
     async def test_token_without_kid_uses_first_published_key(
-        self, mock_get, mock_get_keys_url, mock_rsa_key
+        self, mock_get, mock_get_keys_url, mock_rsa_key, other_rsa_key
     ):
         """A token declaring no kid falls back to the issuer's first key."""
         mock_get_keys_url.return_value = _JWKS_URL
         first = dict(mock_rsa_key, kid="first-key")
-        second = dict(mock_rsa_key, kid="second-key")
+        second = dict(other_rsa_key, kid="second-key")
         mock_get.return_value = {"keys": [first, second]}
 
         result = await _get_key(_make_token(kid=None))
 
         expected = keys_module.get_pem_key(first)[1]
         assert result == expected
+
+    @pytest.mark.parametrize("kid", ["first-key", "second-key"])
+    @patch("authutils.token.keys.get_keys_url_async", new_callable=AsyncMock)
+    @patch("authutils.token.keys._fetch_jwks_async", new_callable=AsyncMock)
+    async def test_kid_selects_its_own_key_among_several(
+        self, mock_get, mock_get_keys_url, mock_rsa_key, other_rsa_key, kid
+    ):
+        """A token's kid resolves to that kid's key, not another published one."""
+        mock_get_keys_url.return_value = _JWKS_URL
+        published = {
+            "first-key": dict(mock_rsa_key, kid="first-key"),
+            "second-key": dict(other_rsa_key, kid="second-key"),
+        }
+        mock_get.return_value = {"keys": list(published.values())}
+
+        result = await _get_key(_make_token(kid=kid))
+
+        assert result == keys_module.get_pem_key(published[kid])[1]
 
     @patch("authutils.token.keys.get_keys_url_async", new_callable=AsyncMock)
     @patch("authutils.token.keys._fetch_jwks_async", new_callable=AsyncMock)
@@ -741,7 +766,6 @@ class TestIssuerAllowlist:
 
 
 @pytest.mark.anyio
-@pytest.mark.anyio
 class TestAsyncKeyDiscovery:
     """
     get_any_public_key_for_token_async must enforce every rule the synchronous
@@ -816,8 +840,6 @@ class TestAsyncKeyDiscovery:
 
         assert ticks > 5, f"event loop appears to have been blocked (ticks={ticks})"
 
-
-_JWKS_URL = "https://example.com/issuer/.well-known/jwks.json"
 
 _PUBLIC_KEY_PEM = (
     "-----BEGIN PUBLIC KEY-----\n"

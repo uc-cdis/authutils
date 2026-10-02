@@ -75,7 +75,7 @@ class InvalidNonceErrorResourceServer(InvalidNonceError):
 
     This error contains the necessary information for a
     Resource Server to
-    return an error specifying a new nonce to the client (in not
+    return an error specifying a new nonce to the client (if not
     provided one or nonce provided is invalid).
     """
 

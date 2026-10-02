@@ -179,11 +179,11 @@ def validate_jwt(
     """
     options = options or {}
 
-    if not isinstance(aud, str) and not isinstance(aud, list) and aud is not None:
+    if aud is not None and not isinstance(aud, (str, list)):
         raise ValueError(
             f"aud must be string, list or None. Instead received aud of type {type(aud)}"
         )
-    if not isinstance(scope, set) and not isinstance(scope, list) and scope is not None:
+    if scope is not None and not isinstance(scope, (set, list)):
         raise ValueError(
             f"scope must be a set or list or None. Instead received scope of type {type(scope)}"
         )

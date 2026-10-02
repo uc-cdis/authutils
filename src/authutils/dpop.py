@@ -517,7 +517,9 @@ class _LargeHeaderRegistry(jws.JWSRegistry):
     Two deviations from the joserfc base class, both deliberate:
 
     - `max_header_length` is raised, because a DPoP proof embeds the full
-      public JWK in its header and RSA keys exceed the default limit.
+      public JWK in its header and RSA keys exceed the default limit. It
+      bounds only the protected-header segment, so it stays below
+      MAX_DPOP_HEADER_LENGTH, which bounds the whole proof.
     - `algorithms` is REQUIRED and must be non-empty. joserfc's `get_alg`
       guards with `if self.allowed:`, so a falsy collection (`None`,
       `set()`, `[]`) silently falls through to "allow every recommended
@@ -804,9 +806,8 @@ def _verify_signature_and_claims(
 
     current_time = int(time.time())
 
-    if "exp" in claims_dict:
-        if current_time >= claims_dict["exp"]:
-            raise ValueError("Invalid DPoP proof: expired")
+    if "exp" in claims_dict and current_time >= claims_dict["exp"]:
+        raise ValueError("Invalid DPoP proof: expired")
 
     # Check iat (issued at) - not too old (5 min leeway like authlib)
     # The proof should be generated moments before the request is sent

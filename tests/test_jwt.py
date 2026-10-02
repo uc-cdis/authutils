@@ -7,7 +7,13 @@ import flask
 import pytest
 import httpx2
 
-from authutils.errors import JWTError, JWTAudienceError, JWTExpiredError, JWTScopeError
+from authutils.errors import (
+    JWTError,
+    JWTAudienceError,
+    JWTExpiredError,
+    JWTPurposeError,
+    JWTScopeError,
+)
 from authutils.token.keys import get_public_key
 from authutils.token.core import validate_jwt
 from authutils.token.validate import require_auth_header
