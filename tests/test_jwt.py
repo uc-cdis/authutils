@@ -399,6 +399,28 @@ def test_empty_allowed_issuers_rejected(
         )
 
 
+@pytest.mark.parametrize(
+    "allowed_issuers", [[None], [""], [123], ["https://example.com", None]]
+)
+def test_non_string_allowed_issuer_entry_rejected(
+    allowed_issuers, encoded_jwt, rsa_public_key, default_audience, default_scopes
+):
+    """
+    An allowlist entry that is not a non-empty string is rejected up front.
+
+    A None entry, e.g. from an unset config value, would otherwise match a
+    token that carries no iss claim at all.
+    """
+    with pytest.raises(ValueError):
+        validate_jwt(
+            encoded_jwt,
+            rsa_public_key,
+            default_audience,
+            default_scopes,
+            allowed_issuers,
+        )
+
+
 def test_get_public_key(app, example_keys_response, mock_get):
     """
     Test the functionality of retrieving the public keys from the keys

@@ -62,11 +62,13 @@ def verify_stateless_nonce(client_nonce: str, secret: str | None = None) -> bool
         raises: every failure mode, including an unexpected one, is reported
         as an invalid nonce.
     """
-    if not isinstance(client_nonce, str):
+    if not isinstance(client_nonce, str) or not client_nonce:
+        logging.debug("invalid nonce: got empty string or nothing")
         return False
 
     shared_secret = _get_shared_secret(secret=secret)
-    if not client_nonce or not shared_secret:
+    if not shared_secret:
+        logging.debug("invalid nonce: no shared secret configured to verify it")
         return False
 
     try:
@@ -86,12 +88,18 @@ def verify_stateless_nonce(client_nonce: str, secret: str | None = None) -> bool
 
         # exp is required, not just checked when present
         if exp is None or exp < now:
+            logging.debug("invalid nonce: missing or expired exp")
             return False
 
         if iat is not None and exp < iat:
+            logging.debug("invalid nonce: exp is before iat")
             return False
 
-        return claims.get("purpose") == "dpop_nonce"
+        if claims.get("purpose") != "dpop_nonce":
+            logging.debug("invalid nonce: purpose is not dpop_nonce")
+            return False
+
+        return True
     except (JoseError, TypeError):
         # BadSignatureError and InvalidPayloadError are JoseError subclasses.
         logging.debug("invalid nonce", exc_info=True)

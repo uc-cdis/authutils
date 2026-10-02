@@ -197,6 +197,11 @@ def validate_jwt(
             "a token from any issuer, so it is rejected rather than treated as "
             "'skip the issuer check'."
         )
+    if not all(isinstance(iss, str) and iss for iss in allowed_issuers):
+        raise ValueError(
+            "allowed_issuers entries must be non-empty strings. A None or empty "
+            "entry would match a token that carries no iss at all."
+        )
     if purpose is not None and not isinstance(purpose, str):
         raise ValueError(
             f"purpose must be a string or None. Instead received purpose of type {type(purpose)}. Value: {purpose}"
@@ -213,7 +218,8 @@ def validate_jwt(
             options=Options(**options),
         )
     except jwt.InvalidAudienceError as e:
-        # aud may not be in scope, use original value
+        # decode raised before returning claims, so the token's own aud is not
+        # available to report here
         raise JWTAudienceError(
             f"token audience validation failed: expected {aud}, got unknown"
         )

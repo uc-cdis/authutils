@@ -163,7 +163,7 @@ def generate_dpop_proof(
     payload: dict[str, Any] = {
         "jti": os.urandom(16).hex(),
         "htm": method.upper(),
-        "htu": _get_url(url),
+        "htu": _get_url_for_htu(url),
         "iat": int(time.time()),
     }
 
@@ -442,7 +442,10 @@ def extract_and_validate_jwk(dpop_header: str) -> jwk.Key:
 
     alg = unverified_header.get("alg")
     if alg not in SUPPORTED_DPOP_ALGS:
-        raise ValueError(f"Unsupported or unpermitted DPoP signature algorithm: {alg}")
+        raise ValueError(
+            f"Unsupported or unpermitted DPoP signature algorithm: {alg}. "
+            f"Allowed: {sorted(SUPPORTED_DPOP_ALGS)}"
+        )
 
     typ = unverified_header.get("typ")
     if not isinstance(typ, str) or typ.lower() != DPOP_JWT_TYPE:
@@ -752,6 +755,8 @@ def _validate_claim_types(claims_dict: dict[str, Any]) -> None:
     for numeric_claim in ("iat", "exp", "nbf"):
         if numeric_claim in claims_dict:
             value = claims_dict[numeric_claim]
+            # bool is a subclass of int, so it has to be excluded explicitly
+            # or an iat of `true` would evaluate to 1 as an int, which is wrong
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 raise ValueError(
                     f"DPoP proof '{numeric_claim}' claim must be a number, "
@@ -875,10 +880,10 @@ def _validate_proof_claims(
     # percent-decoded: ASGI/WSGI frameworks hand the server an already-decoded
     # path while the client signs the encoded one, so a proof for
     # ".../my%20file" would otherwise never match its own request. Decoding
-    # happens after `_get_url` has split off any query, so an encoded "%3F"
+    # happens after `_get_url_for_htu` has split off any query, so an encoded "%3F"
     # cannot turn part of the path into a query string.
-    actual_url = _get_url(request_url)
-    if unquote(actual_url) != unquote(_get_url(htu_value)):
+    actual_url = _get_url_for_htu(request_url)
+    if unquote(actual_url) != unquote(_get_url_for_htu(htu_value)):
         raise ValueError(
             f"htu mismatch: request URL '{actual_url}' != proof htu '{htu_value}'"
         )
@@ -988,7 +993,7 @@ def _get_token_jkt(access_token: str) -> str:
     return jkt
 
 
-def _get_url(url: str) -> str:
+def _get_url_for_htu(url: str) -> str:
     """
     Extract the scheme, host, and path from a URL for the DPoP htu claim.
 
