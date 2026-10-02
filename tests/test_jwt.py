@@ -292,7 +292,7 @@ def test_validate_jwt_with_incorrect_purpose(
     """
     Test that `validate_jwt` rejects tokens with incorrect purpose.
     """
-    with pytest.raises(JWTError):
+    with pytest.raises(JWTPurposeError):
         validate_jwt(
             encoded_jwt,
             rsa_public_key,
