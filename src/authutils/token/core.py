@@ -185,7 +185,7 @@ def validate_jwt(
         )
     if not isinstance(scope, set) and not isinstance(scope, list) and scope is not None:
         raise ValueError(
-            f"scope must be set or list or None. Instead received scope of type {type(scope)}"
+            f"scope must be a set or list or None. Instead received scope of type {type(scope)}"
         )
     if not isinstance(allowed_issuers, set) and not isinstance(allowed_issuers, list):
         raise ValueError(
