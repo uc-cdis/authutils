@@ -3,7 +3,7 @@
 Defines functionality to check case existence in dbGaP.
 """
 
-import httpx
+import httpx2
 import re
 
 import xmltodict
@@ -32,14 +32,14 @@ class dbGaPXReferencer(object):
         "GetSampleStatus.cgi?study_id={phsid}&rettype=xml"
     )
 
-    def __init__(self, db, logger=None, proxies={}):
+    def __init__(self, db, logger=None, proxy=None):
         """Instantiate a class to crossvalidate entity existence in dbGaP."""
         self._cached_telemetry_xmls = {
             # "phsid": "telemetry xml"
         }
 
         self.db = db
-        self.proxies = proxies
+        self.proxy = proxy
         self.logger = logger or get_logger("dbGapXReferencer", log_level="info")
         self.logger.info("Creating new dbGaP Cross Referencer")
 
@@ -96,7 +96,7 @@ class dbGaPXReferencer(object):
             self.logger.info("Pulling telemetry report from {0}".format(url))
 
             # Request the XML
-            with httpx.Client(proxies=self.proxies) as client:
+            with httpx2.Client(proxy=self.proxy) as client:
                 r = client.get(url)
             if r.status_code != 200:
                 msg = (
@@ -217,7 +217,7 @@ class dbGaPXReferencer(object):
         self.logger.info("Pulling telemetry report from {0}".format(url))
 
         # Request the XML
-        with httpx.Client(proxies=self.proxies) as client:
+        with httpx2.Client(proxy=self.proxy) as client:
             r = client.get(url)
         if r.status_code == 400:
             msg = "Project appears not to exist in dbGaP."

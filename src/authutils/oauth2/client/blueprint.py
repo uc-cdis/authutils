@@ -33,7 +33,6 @@ from flask import current_app
 
 import authutils.oauth2.client.authorize
 
-
 blueprint = flask.Blueprint("oauth", __name__)
 
 
