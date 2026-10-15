@@ -4,7 +4,6 @@ Define pytest fixtures for testing auth utils.
 """
 
 from datetime import datetime, timedelta
-import os
 import uuid
 
 from authutils.user import DEFAULT_TOKEN_AUDIENCE

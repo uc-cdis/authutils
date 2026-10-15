@@ -279,10 +279,13 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
         jwt_public_keys = httpx2.get(
             path, timeout=httpx2.Timeout(timeout=KEYS_REQUEST_TIMEOUT)
         ).json()["keys"]
-    except:
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
         raise JWTError(
             "Attempted to refresh public keys for {},"
-            " but could not get keys from path {}.".format(user_api, path)
+            " but could not get keys from path {}".format(user_api, path)
         )
 
     logger.info("Refreshing public key cache for issuer {}...".format(user_api))
