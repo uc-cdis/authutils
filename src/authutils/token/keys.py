@@ -28,6 +28,7 @@ import threading
 import time
 from collections import OrderedDict
 from collections.abc import Iterable
+import traceback
 from typing import Any
 
 
@@ -279,9 +280,7 @@ def refresh_jwt_public_keys(user_api=None, pkey_cache=None, logger=None):
         jwt_public_keys = httpx2.get(
             path, timeout=httpx2.Timeout(timeout=KEYS_REQUEST_TIMEOUT)
         ).json()["keys"]
-    except Exception as e:
-        import traceback
-
+    except Exception:
         traceback.print_exc()
         raise JWTError(
             "Attempted to refresh public keys for {},"
